@@ -1,4 +1,4 @@
-CFLAGS = -Wall -pedantic -std=gnu89
+CFLAGS = -Wall -pedantic -std=gnu89 -fno-common
 EXE = rx5-ls
 all: $(EXE)
 dev: CFLAGS += -Werror
