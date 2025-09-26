@@ -20,7 +20,7 @@ int main(void) {
   printf("Number of voices: %d\n", nvoices);
   for (i = 0; i < nvoices; i++) {
     uint8_t *p = rom + 6 + 32 * i;
-    int32_t pcmstart, loopstart, loopend;
+    int32_t pcmstart, pcmend, loopstart, loopend;
     puts("---");
     printf("Voice name: %6.6s\n", p + 26);
     printf("Pitch: octave %d note %d\n", p[0], p[1]);
@@ -32,6 +32,8 @@ int main(void) {
     printf("Loop start: %#x\n", loopstart);
     loopend = int24(p + 8);
     printf("Loop end: %#x\n", loopend);
+    pcmend = int24(p + 11);
+    printf("PCM data end: %#x\n", pcmend);
   }
   return 0;
 }
