@@ -15,7 +15,16 @@ int main(void) {
   printf("ROM ID: %d\n", rom[4]);
   nvoices = rom[5];
   printf("Number of voices: %d\n", nvoices);
-  for (i = 0; i < nvoices; i++)
-    printf("Voice name: %6.6s\n", rom + 32 * (i + 1));
+  for (i = 0; i < nvoices; i++) {
+    uint8_t *p = rom + 6 + 32 * i;
+    int pcmstart;
+    puts("---");
+    printf("Voice name: %6.6s\n", p + 26);
+    printf("Pitch: octave %d note %d\n", p[0], p[1]);
+    printf("PCM format: %s\n", p[2] ? "12-bit" : "8-bit");
+    printf("Loop: %s\n", p[3] & 0x40 ? "yes" : "no");
+    pcmstart = ((int)(p[3] & 1) << 16) | ((int)(p[4]) << 8);
+    printf("PCM data start: %#x\n", pcmstart);
+  }
   return 0;
 }
