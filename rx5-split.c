@@ -20,13 +20,21 @@ int main(int argc, char **argv) {
   if (chdir(argv[2]))
     err(-1, "chdir %s", argv[2]);
   for (v = rom.voice; v < rom.voice + rom.nvoice; v++) {
-    uint8_t filename[11] = "123456.wav", *p;
-    int16_t *q;
-    if (v->pcmformat)
-      continue;
-    q = pcmdata;
-    for (p = rom.data + v->pcmstart; p < rom.data + v->pcmend; p++)
-      *q++ = (int16_t)*p << 8;
+    uint8_t filename[11] = "123456.wav", *p, *pcmend = rom.data + v->pcmend;
+    int16_t *q = pcmdata;
+    if (v->pcmformat) {
+      for (p = rom.data + v->pcmstart + 1; p < pcmend; p += 3) {
+        *q = ((int16_t)p[0] & 0xf) << 4;
+        if (p + 1 < pcmend)
+          *q |= (int16_t)p[1] << 8;
+        q++;
+        if (p + 2 < pcmend)
+          *q++ = ((int16_t)p[2] << 8) | ((int16_t)p[0] & 0xf0);
+      }
+    } else {
+      for (p = rom.data + v->pcmstart; p < rom.data + v->pcmend; p++)
+        *q++ = (int16_t)*p << 8;
+    }
     memmove(filename, v->name, 6);
     for (p = filename; p < filename + 10; p++)
       if (!*p || strchr(":/", *p))
