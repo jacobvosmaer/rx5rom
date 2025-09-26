@@ -3,6 +3,7 @@ EXE = rx5-ls rx5-split
 all: $(EXE)
 dev: CFLAGS += -Werror
 dev: all
-rx5-split: wav.o
+rx5-ls: rx5.o
+rx5-split: wav.o rx5.o
 clean:
 	rm -f -- $(EXE)
