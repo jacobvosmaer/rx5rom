@@ -3,3 +3,4 @@ rx5-split
 *.o
 tmp
 *.dSYM
+rom

@@ -8,7 +8,6 @@
 void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f);
 struct rx5rom rom;
 uint16_t pcmdata[128 * 1024];
-int16_t sint8(uint8_t b) { return (int16_t)b - (b >= 0x80 ? 256 : 0); }
 int main(int argc, char **argv) {
   struct rx5voice *v;
   FILE *f;
@@ -25,17 +24,17 @@ int main(int argc, char **argv) {
             *pcmend = rom.data + v->pcmend;
     uint16_t *q = pcmdata;
     if (v->pcmformat) {
-      for (p = pcmstart + 1; p < pcmend; p += 3) {
-        *q = 16 * sint8(p[0] & 0xf);
-        if (p + 1 < pcmend)
-          *q += 256 * sint8(p[1]);
-        q++;
-        if (p + 2 < pcmend)
-          *q++ = 256 * sint8(p[2]) + 16 * sint8(p[0] >> 4);
+      for (p = pcmstart + 2; p < pcmend; p++, q++) {
+        if ((q - pcmdata) & 1) {
+          *q = (p[0] << 8) | (p[-2] & 0xf0);
+          p++;
+        } else {
+          *q = (p[0] << 8) | ((p[-1] & 0x0f) << 4);
+        }
       }
     } else {
-      for (p = pcmstart; p < pcmend; p++)
-        *q++ = *p << 8;
+      for (p = pcmstart; p < pcmend; p++, q++)
+        *q = *p << 8;
     }
     memmove(filename, v->name, 6);
     for (p = filename; p < filename + 10; p++)
