@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-void writewav(int16_t *pcmdata, int nsamples, int samplerate, FILE *f);
+void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f);
 struct rx5rom rom;
-int16_t pcmdata[128 * 1024];
+uint16_t pcmdata[128 * 1024];
 int16_t sint8(uint8_t b) { return (int16_t)b - (b >= 0x80 ? 256 : 0); }
 int main(int argc, char **argv) {
   struct rx5voice *v;
@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     err(-1, "chdir %s", argv[2]);
   for (v = rom.voice; v < rom.voice + rom.nvoice; v++) {
     uint8_t filename[11] = "123456.wav", *p, *pcmend = rom.data + v->pcmend;
-    int16_t *q = pcmdata;
+    uint16_t *q = pcmdata;
     if (v->pcmformat) {
       for (p = rom.data + v->pcmstart + 1; p < pcmend; p += 3) {
         *q = 16 * sint8(p[0] & 0xf);

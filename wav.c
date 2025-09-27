@@ -10,7 +10,7 @@ void putle(unsigned x, int n, FILE *f) {
 }
 /* Based on information from
  * https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html */
-void writewav(int16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
+void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
   int samplebits = 16, i;
   int64_t datasize, fmtsize, wavesize, n;
   assert(nsamples >= 0 && nsamples <= UINT32_MAX / 2);
