@@ -1,5 +1,5 @@
 CFLAGS = -Wall -pedantic -std=gnu89 -fno-common
-EXE = rx5-ls rx5-split
+EXE = rx5-ls rx5-split rx5-program
 OBJ = rx5.o wav.o
 all: $(EXE)
 dev: CFLAGS += -Werror -g
