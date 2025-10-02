@@ -1,40 +1,48 @@
 /* rx5-program: program RX5USB board from command line */
-#include "hid.h"
 #include <err.h>
+#include <hidapi.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #define MSGSIZE 64
 #define TIMEOUT 1000
-uint8_t request[MSGSIZE] = {'R', 'X', '5', 1, '?', '?', 0, 0, 0, 0, 0, 0, 2, 0},
-        response[MSGSIZE];
+uint8_t request[MSGSIZE + 1] = {0, 'R', 'X', '5', 1, '?', '?', 0,
+                                0, 0,   0,   0,   0, 2,   0},
+                          response[MSGSIZE];
 int main(void) {
   int i;
-  while (rawhid_open(1, 0x6112, 0x5550, 0xffab, 0x0200) != 1)
+  hid_device *dev;
+  fputs("open device: ", stderr);
+  while (dev = hid_open(0x6112, 0x5550, 0), !dev)
     ;
-  rawhid_send(0, request, sizeof(request), TIMEOUT);
-  request[12] = 'O';
-  request[13] = 'K';
-  while (1) {
-    int n = rawhid_recv(0, response, sizeof(response), TIMEOUT);
-    if (n == sizeof(response) && !memcmp(request, response, sizeof(request)))
-      break;
-    else if (n > 0)
-      errx(-1, "invalid handshake response");
-  }
-  puts("handshake ok");
+  fputs("ok\n", stderr);
+  fputs("write handshake: ", stderr);
+  while (hid_write(dev, request, sizeof(request)) != sizeof(request))
+    ;
+  fputs("ok\n", stderr);
+  fputs("read handshake: ", stderr);
+  while (hid_read(dev, response, sizeof(response)) != sizeof(response))
+    ;
+  fputs("ok\n", stderr);
+  request[13] = 'O';
+  request[14] = 'K';
+  if (memcmp(request + 1, response, MSGSIZE))
+    errx(-1, "invalid handshake response");
+
   for (i = 0; i < 2048; i++) {
-    if (fread(request, 1, sizeof(request), stdin) != sizeof(request))
+    if (fread(request + 1, 1, MSGSIZE, stdin) != MSGSIZE)
       errx(-1, "short read from stdin");
-    if (rawhid_send(0, request, sizeof(request), TIMEOUT) != sizeof(request))
-      errx(-1, "rawhid_send failed");
-    while (rawhid_recv(0, response, sizeof(response), TIMEOUT) !=
-           sizeof(response))
+    fputc('.', stderr);
+    while (hid_write(dev, request, sizeof(request)) != sizeof(request))
       ;
-    if (memcmp(request, response, sizeof(request)))
-      errx(-1, "I/O error: invalid response from device");
-    if ((i % 64) == 63)
-      putchar('.');
+    fputc('o', stderr);
+    if (0) {
+      while (hid_read(dev, response, sizeof(response)) != sizeof(response))
+        ;
+      fputc('O', stderr);
+      if (memcmp(request + 1, response, MSGSIZE))
+        errx(-1, "I/O error: invalid response from device");
+    }
   }
   return 0;
 }

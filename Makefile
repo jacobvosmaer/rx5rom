@@ -6,10 +6,10 @@ dev: CFLAGS += -Werror -g
 dev: all
 rx5-ls: rx5.o
 rx5-split: wav.o rx5.o
-rx5-program: CPPFLAGS += -DOS_LINUX -Irawhid
-rx5-program: CFLAGS += $(shell pkg-config --cflags libusb) -std=c99
-rx5-program: LDFLAGS += $(shell pkg-config --libs libusb)
-rx5-program: rawhid/hid_LINUX.o
+#rx5-program: CPPFLAGS += -DOS_LINUX -Irawhid
+rx5-program: CFLAGS += $(shell pkg-config --cflags hidapi) -std=c99
+rx5-program: LDFLAGS += $(shell pkg-config --libs hidapi)
+#rx5-program: rawhid/hid_LINUX.o
 
 clean:
 	rm -rf -- $(EXE) $(OBJ)
