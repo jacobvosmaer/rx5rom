@@ -3,28 +3,44 @@
 #include <hidapi.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #define MSGSIZE 64
 uint8_t request[MSGSIZE + 1] = "\x00RX5\x01", response[MSGSIZE];
+#define BANKSIZE (128 * 1024)
+uint8_t bank[BANKSIZE + 1];
 void putle(uint8_t *p, uint64_t x, int n) {
   for (; n--; x >>= 8)
     *p++ = x;
 }
-int main(void) {
-  int i;
+void usage(void) {
+  fputs("Usage: rx5-program 1A|1B|2A|2B BANKFILE\n", stderr);
+  exit(1);
+}
+int main(int argc, char **argv) {
+  int i, n;
+  char *p, *slots = "1A1B2A2B";
+  FILE *f;
   hid_device *dev = 0;
   struct hid_device_info *devinfo;
-  uint32_t address = 0, size = 2 * 128 * 1024;
+  uint32_t address;
+  if (argc != 3)
+    usage();
+  if (p = strstr(slots, argv[1]),
+      strlen(argv[1]) != 2 || !p || ((p - slots) & 1))
+    usage();
+  address = (p - slots) / 2 * BANKSIZE;
+  if (f = fopen(argv[2], "rb"), !f)
+    err(-1, "open %s", argv[2]);
+  if (n = fread(bank, 1, sizeof(bank), f), n != BANKSIZE)
+    errx(-1, "bank file too %s", n < BANKSIZE ? "small" : "big");
   putle(request + 1 + 4, address, 4);
-  putle(request + 1 + 8, size, 4);
+  putle(request + 1 + 8, BANKSIZE, 4);
   fputs("open device: ", stderr);
-  for (devinfo = hid_enumerate(0x6112, 0x5550); devinfo;
-       devinfo = devinfo->next) {
-    if (devinfo->usage_page == 0xffab && devinfo->usage == 0x200) {
+  for (devinfo = hid_enumerate(0x6112, 0x5550); !dev && devinfo;
+       devinfo = devinfo->next)
+    if (devinfo->usage_page == 0xffab && devinfo->usage == 0x200)
       dev = hid_open_path(devinfo->path);
-      break;
-    }
-  }
   if (!dev)
     errx(-1, "failed to open usb device");
   fputs("ok\n", stderr);
@@ -40,10 +56,9 @@ int main(void) {
   request[1 + 13] = 'K';
   if (memcmp(request + 1, response, MSGSIZE))
     errx(-1, "invalid handshake response");
-  fprintf(stderr, "write %d bytes to address 0x%x: ", size, address);
-  for (i = 0; i < size / 64; i++) {
-    if (fread(request + 1, 1, MSGSIZE, stdin) != MSGSIZE)
-      errx(-1, "short read from stdin");
+  fprintf(stderr, "write %d bytes to address 0x%x: ", BANKSIZE, address);
+  for (i = 0; i < BANKSIZE / MSGSIZE; i++) {
+    memmove(request + 1, bank + i * MSGSIZE, MSGSIZE);
     if (hid_write(dev, request, sizeof(request)) != sizeof(request))
       errx(-1, "hid_write block %d failed", i);
     if (hid_read(dev, response, sizeof(response)) != sizeof(response))
