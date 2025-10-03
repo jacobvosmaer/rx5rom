@@ -8,32 +8,27 @@
 #define MSGSIZE 64
 uint8_t request[MSGSIZE + 1] = "\x00RX5\x01", response[MSGSIZE];
 #define BANKSIZE (128 * 1024)
-uint8_t bank[BANKSIZE + 1];
 void putle(uint8_t *p, uint64_t x, int n) {
   for (; n--; x >>= 8)
     *p++ = x;
 }
 void usage(void) {
-  fputs("Usage: rx5-program 1A|1B|2A|2B BANKFILE\n", stderr);
+  fputs("Usage: rx5-program FIRST_SLOT NUM_BANKS\n", stderr);
   exit(1);
 }
 int main(int argc, char **argv) {
-  int i, n;
-  char *p, *slots = "1A1B2A2B";
-  FILE *f;
+  int i;
   hid_device *dev = 0;
   struct hid_device_info *devinfo;
-  uint32_t address;
-  if (argc != 3)
+  uint32_t address, size;
+  if (argc != 3 || strlen(argv[1]) != 1 || strlen(argv[2]) != 1)
     usage();
-  if (p = strstr(slots, argv[1]),
-      strlen(argv[1]) != 2 || !p || ((p - slots) & 1))
-    usage();
-  address = (p - slots) / 2 * BANKSIZE;
-  if (f = fopen(argv[2], "rb"), !f)
-    err(-1, "open %s", argv[2]);
-  if (n = fread(bank, 1, sizeof(bank), f), n != BANKSIZE)
-    errx(-1, "bank file too %s", n < BANKSIZE ? "small" : "big");
+  if (address = argv[1][0] - '0', address < 0 || address > 3)
+    errx(-1, "invalid first slot: %s", argv[1]);
+  if (size = argv[2][0] - '0', size < 0 || address + size > 4)
+    errx(-1, "invalid number of banks: %s", argv[2]);
+  address *= BANKSIZE;
+  size *= BANKSIZE;
   for (devinfo = hid_enumerate(0x6112, 0x5550); !dev && devinfo;
        devinfo = devinfo->next)
     if (devinfo->usage_page == 0xffab && devinfo->usage == 0x200)
@@ -41,7 +36,7 @@ int main(int argc, char **argv) {
   if (!dev)
     errx(-1, "failed to open usb device");
   putle(request + 1 + 4, address, 4);
-  putle(request + 1 + 8, BANKSIZE, 4);
+  putle(request + 1 + 8, size, 4);
   if (hid_write(dev, request, sizeof(request)) != sizeof(request))
     errx(-1, "hid_write handshake failed");
   if (hid_read(dev, response, sizeof(response)) != sizeof(response))
@@ -49,9 +44,10 @@ int main(int argc, char **argv) {
   memmove(request + 1 + 12, "OK", 2);
   if (memcmp(request + 1, response, MSGSIZE))
     errx(-1, "invalid handshake response");
-  fprintf(stderr, "write %d bytes to address 0x%x: ", BANKSIZE, address);
-  for (i = 0; i < BANKSIZE / MSGSIZE; i++) {
-    memmove(request + 1, bank + i * MSGSIZE, MSGSIZE);
+  fprintf(stderr, "write %d bytes to address 0x%x: ", size, address);
+  for (i = 0; i < size / MSGSIZE; i++) {
+    if (fread(request + 1, 1, MSGSIZE, stdin) != MSGSIZE)
+      errx(-1, "bank file too small");
     if (hid_write(dev, request, sizeof(request)) != sizeof(request))
       errx(-1, "hid_write block %d failed", i);
     if (hid_read(dev, response, sizeof(response)) != sizeof(response))
