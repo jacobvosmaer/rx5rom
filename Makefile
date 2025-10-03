@@ -1,7 +1,11 @@
 CFLAGS = -Wall -pedantic -std=gnu89 -fno-common
 EXE = rx5-ls rx5-split rx5-program
 OBJ = rx5.o wav.o rawhid/hid_LINUX.o
+ifeq ($(shell uname), Linux)
+HIDAPI ?= hidapi-hidraw
+else
 HIDAPI ?= hidapi
+endif
 all: $(EXE)
 dev: CFLAGS += -Werror -g
 dev: all
