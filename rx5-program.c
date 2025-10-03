@@ -3,18 +3,13 @@
 #include <hidapi.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#define BANKSIZE (128 * 1024)
 #define MSGSIZE 64
 uint8_t request[MSGSIZE + 1] = "\x00RX5\x01", response[MSGSIZE];
-#define BANKSIZE (128 * 1024)
 void putle(uint8_t *p, uint64_t x, int n) {
   for (; n--; x >>= 8)
     *p++ = x;
-}
-void usage(void) {
-  fputs("Usage: rx5-program FIRST_SLOT NUM_BANKS\n", stderr);
-  exit(1);
 }
 int main(int argc, char **argv) {
   int i;
@@ -22,7 +17,7 @@ int main(int argc, char **argv) {
   struct hid_device_info *devinfo;
   uint32_t address, size;
   if (argc != 3 || strlen(argv[1]) != 1 || strlen(argv[2]) != 1)
-    usage();
+    errx(-1, "usage: rx5-program FIRST_SLOT NUM_BANKS");
   if (address = argv[1][0] - '0', address < 0 || address > 3)
     errx(-1, "invalid first slot: %s", argv[1]);
   if (size = argv[2][0] - '0', size < 0 || address + size > 4)
