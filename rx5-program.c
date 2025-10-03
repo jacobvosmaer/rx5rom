@@ -34,20 +34,19 @@ int main(int argc, char **argv) {
     err(-1, "open %s", argv[2]);
   if (n = fread(bank, 1, sizeof(bank), f), n != BANKSIZE)
     errx(-1, "bank file too %s", n < BANKSIZE ? "small" : "big");
-  putle(request + 1 + 4, address, 4);
-  putle(request + 1 + 8, BANKSIZE, 4);
   for (devinfo = hid_enumerate(0x6112, 0x5550); !dev && devinfo;
        devinfo = devinfo->next)
     if (devinfo->usage_page == 0xffab && devinfo->usage == 0x200)
       dev = hid_open_path(devinfo->path);
   if (!dev)
     errx(-1, "failed to open usb device");
+  putle(request + 1 + 4, address, 4);
+  putle(request + 1 + 8, BANKSIZE, 4);
   if (hid_write(dev, request, sizeof(request)) != sizeof(request))
     errx(-1, "hid_write handshake failed");
   if (hid_read(dev, response, sizeof(response)) != sizeof(response))
     errx(-1, "hid_read handshake failed");
-  request[1 + 12] = 'O';
-  request[1 + 13] = 'K';
+  memmove(request + 1 + 12, "OK", 2);
   if (memcmp(request + 1, response, MSGSIZE))
     errx(-1, "invalid handshake response");
   fprintf(stderr, "write %d bytes to address 0x%x: ", BANKSIZE, address);
