@@ -6,13 +6,17 @@
 #include <string.h>
 #define MSGSIZE 64
 uint8_t request[MSGSIZE + 1] = "\x00RX5\x01??", response[MSGSIZE];
+void putle(uint8_t *p, uint64_t x, int n) {
+  for (; n--; x >>= 8)
+    *p++ = x;
+}
 int main(void) {
   int i;
   hid_device *dev = 0;
   struct hid_device_info *devinfo;
-  uint32_t size = 2 * 128 * 1024;
-  for (i = 0; i < 4; i++)
-    request[11 + i] = size >> (i * 8);
+  uint32_t address = 0, size = 2 * 128 * 1024;
+  putle(request + 7, address, 4);
+  putle(request + 11, size, 4);
   fputs("open device: ", stderr);
   for (devinfo = hid_enumerate(0x6112, 0x5550); devinfo;
        devinfo = devinfo->next) {
@@ -36,13 +40,13 @@ int main(void) {
   request[14] = 'K';
   if (memcmp(request + 1, response, MSGSIZE))
     errx(-1, "invalid handshake response");
-  fputs("write flash: ", stderr);
+  fprintf(stderr, "write %d bytes to address 0x%x: ", size, address);
   for (i = 0; i < size / 64; i++) {
     if (fread(request + 1, 1, MSGSIZE, stdin) != MSGSIZE)
       errx(-1, "short read from stdin");
     while (hid_write(dev, request, sizeof(request)) != sizeof(request))
       ;
-    if (10) {
+    if (0) {
       while (hid_read_timeout(dev, response, sizeof(response), 1000) !=
              sizeof(response))
         ;
