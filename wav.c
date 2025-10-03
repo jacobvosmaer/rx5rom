@@ -32,8 +32,6 @@ void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
   putle(samplebits, 2, f);                    /* bits per sample */
   fputs("data", f);
   putle(n, 4, f);
-  /* ADS sample data is big-endian so we must convert the 16-bit samples to
-   * little-endian now. */
   for (i = 0; i < nsamples; i++) {
     fputc(pcmdata[i] & 0xff, f);
     fputc(pcmdata[i] >> 8, f);
