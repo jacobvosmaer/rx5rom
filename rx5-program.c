@@ -5,8 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #define MSGSIZE 64
-uint8_t request[MSGSIZE + 1] = {0, 'R', 'X', '5', 1, '?', '?'},
-                          response[MSGSIZE];
+uint8_t request[MSGSIZE + 1] = "\x00RX5\x01??", response[MSGSIZE];
 int main(void) {
   int i;
   hid_device *dev = 0;
