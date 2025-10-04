@@ -1,5 +1,5 @@
 CFLAGS = -Wall -pedantic -std=gnu89 -fno-common
-EXE = rx5-ls rx5-split rx5-program
+EXE = rx5-ls rx5-split rx5-program rx5-build
 OBJ = rx5.o wav.o
 ifeq ($(shell uname), Linux)
 HIDAPI ?= hidapi-hidraw
