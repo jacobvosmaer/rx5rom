@@ -13,18 +13,18 @@ void putle(uint8_t *p, uint64_t x, int n) {
 }
 int main(int argc, char **argv) {
   int i;
-  hid_device *dev = 0;
+  hid_device *dev;
   struct hid_device_info *devinfo;
   uint32_t address, size;
   if (argc != 3 || strlen(argv[1]) != 1 || strlen(argv[2]) != 1)
     errx(-1, "usage: rx5-program FIRST_SLOT NUM_BANKS");
   if (address = argv[1][0] - '0', address < 0 || address > 3)
     errx(-1, "invalid first slot: %s", argv[1]);
-  if (size = argv[2][0] - '0', size < 0 || address + size > 4)
+  if (size = argv[2][0] - '0', size < 1 || address + size > 4)
     errx(-1, "invalid number of banks: %s", argv[2]);
   address *= BANKSIZE;
   size *= BANKSIZE;
-  for (devinfo = hid_enumerate(0x6112, 0x5550); !dev && devinfo;
+  for (dev = 0, devinfo = hid_enumerate(0x6112, 0x5550); !dev && devinfo;
        devinfo = devinfo->next)
     if (devinfo->usage_page == 0xffab && devinfo->usage == 0x200)
       dev = hid_open_path(devinfo->path);
