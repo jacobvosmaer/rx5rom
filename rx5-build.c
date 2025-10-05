@@ -16,36 +16,47 @@ uint64_t getle(uint8_t *p, int size) {
     x = (x << 8) | *--p;
   return x;
 }
-void putwav(FILE *f, int channel, char *filename) {
+void putwav(FILE *f, int channel) {
   int wavsize;
   uint8_t *p, *wavend, *fmt;
   uint64_t x;
+  int nchannels, blockalign, samplebits;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
-    errx(-1, "WAV file too big: %s", filename);
+    errx(-1, "WAV file too big");
   if (wavsize < 12)
-    errx(-1, "WAV file too small: %s", filename);
+    errx(-1, "WAV file too smal");
   p = wav;
   wavend = wav + wavsize;
   if (memcmp(p, "RIFF", 4))
     errx(-1, "missing RIFF header");
   p += 4;
   if (x = getle(p, 4), x != wavsize - 8)
-    errx(-1, "WAV file size does not match RIFF header: %llu: %s", x, filename);
+    errx(-1, "WAV file size does not match RIFF header: %llu", x);
   p += 4;
   if (memcmp(p, "WAVE", 4))
     errx(-1, "missing WAVE header");
   for (p = wav + 12; p < wavend - 8 && memcmp(p, "fmt ", 4);
        p += 8 + getle(p + 4, 4))
     ;
+  if (memcmp(p, "fmt ", 4))
+    errx(-1, "fmt chunk not found");
   if (x = getle(p + 4, 4), x != 16)
-    errx(-1, "unsupported WAV fmt size: %llu:: %s", x, filename);
+    errx(-1, "unsupported WAV fmt size: %llu", x);
   fmt = p + 8;
   if (x = getle(fmt, 2), x != 1)
-    errx(-1, "unsupported WAV format: %llu:: %s", x, filename);
-  if (x = getle(fmt + 2, 2), x != 1)
-    errx(-1, "unsupported number of channels: %llu: %s", x, filename);
+    errx(-1, "unsupported WAV format: %llu", x);
+  if (nchannels = getle(fmt + 2, 2), nchannels != 1)
+    errx(-1, "unsupported number of channels: %d", nchannels);
   if (x = getle(fmt + 4, 4), x != 25000)
-    warnx("wrong samplerate: %llu: %s", x, filename);
+    warnx("warning: samplerate is not 25kHz: %llu", x);
+  if (blockalign = getle(fmt + 12, 2), !blockalign)
+    errx(-1, "invalid blockalign: %d", blockalign);
+  if (samplebits = getle(fmt + 14, 2),
+      samplebits != (8 * blockalign) / nchannels)
+    errx(-1,
+         "bits per sample (%d) does not match blockalign (%d) and channel "
+         "count (%d)",
+         samplebits, blockalign, nchannels);
   for (p = wav + 12; p < wavend - 8 && memcmp(p, "data", 4);
        p += 8 + getle(p + 4, 4))
     ;
@@ -61,7 +72,8 @@ int main(int argc, char **argv) {
       errx(-1, "invalid channel: %s", argv[i]);
     if (f = fopen(argv[i + 1], "rb"), !f)
       err(-1, "open %s", argv[i + 1]);
-    putwav(f, channel, argv[i + 1]);
+    fprintf(stderr, "%s\n", argv[i + 1]);
+    putwav(f, channel);
     fclose(f);
   }
   return 0;
