@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#define RX5_VOICE_SIZE 32
 #define RX5_NUM_VOICE 5
 struct rx5voice {
   char name[7];

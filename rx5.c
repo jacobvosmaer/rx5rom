@@ -39,5 +39,5 @@ void loadrom(struct rx5rom *rom, FILE *f) {
     errx(-1, "missing leading zeroes");
   rom->nvoice = rom->data[RX5_NUM_VOICE];
   for (i = 0; i < rom->nvoice; i++)
-    loadvoice(rom->voice + i, rom->data + 6 + i * 32);
+    loadvoice(rom->voice + i, rom->data + 6 + i * RX5_VOICE_SIZE);
 }
