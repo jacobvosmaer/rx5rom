@@ -1,4 +1,5 @@
 /* rx5-build: build RX5 ROM out of WAV files */
+#include "rx5.h"
 #include <err.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,6 +9,8 @@
   if (!(x))                                                                    \
   __builtin_trap()
 uint8_t rom[128 * 1024], wav[(sizeof(rom) * 2) / 3 * 4];
+struct rx5voice voices[255];
+int nvoices;
 uint64_t getle(uint8_t *p, int size) {
   uint64_t x = 0;
   assert(size > 0 && size < 9);
@@ -19,6 +22,7 @@ uint64_t getle(uint8_t *p, int size) {
 void putwav(FILE *f, int channel) {
   int wavsize;
   uint8_t *p, *wavend, *fmt;
+  struct rx5voice *voice = voices + nvoices++;
   uint64_t x;
   int nchannels, blockalign, samplebits;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
@@ -38,7 +42,7 @@ void putwav(FILE *f, int channel) {
   for (p = wav + 12; p < wavend - 8 && memcmp(p, "fmt ", 4);
        p += 8 + getle(p + 4, 4))
     ;
-  if (memcmp(p, "fmt ", 4))
+  if (p >= wavend - 8 || memcmp(p, "fmt ", 4))
     errx(-1, "fmt chunk not found");
   if (x = getle(p + 4, 4), x != 16)
     errx(-1, "unsupported WAV fmt size: %llu", x);
@@ -57,14 +61,26 @@ void putwav(FILE *f, int channel) {
          "bits per sample (%d) does not match blockalign (%d) and channel "
          "count (%d)",
          samplebits, blockalign, nchannels);
-  for (p = wav + 12; p < wavend - 8 && memcmp(p, "data", 4);
+  for (p = wav + 12; p < wavend - 8 && getle(p + 4, 4) && memcmp(p, "data", 4);
        p += 8 + getle(p + 4, 4))
     ;
+  if (p >= wavend - 8 || memcmp(p, "data", 4))
+    errx(-1, "WAV data section not found");
+  voice->pcmstart =
+      voice > voices ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
+  if (samplebits == 8) {
+    /* store 8-bit sample */
+    memmove(rom + voice->pcmstart, p + 8, getle(p + 4, 4));
+  } else {
+    /* store 12-bit sample */
+  }
 }
 int main(int argc, char **argv) {
   int i;
   if (argc < 3 || !(argc & 1))
     errx(-1, "Usage: rx5-build CHANNEL WAV [CHANNEL WAV...]");
+  if (argc > 511)
+    errx(-1, "too many voices: maximum is 255");
   for (i = 1; i < argc; i += 2) {
     FILE *f;
     int channel = atoi(argv[i]);

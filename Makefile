@@ -9,9 +9,11 @@ endif
 all: $(EXE)
 dev: CFLAGS += -Werror -g
 dev: all
+rx5.o: rx5.h
 rx5-ls: rx5.o
 rx5-split: wav.o rx5.o
 rx5-program: CFLAGS += $(shell pkg-config --cflags $(HIDAPI))
 rx5-program: LDLIBS += $(shell pkg-config --libs $(HIDAPI))
+rx5-build: rx5.o
 clean:
 	rm -rf -- $(EXE) $(OBJ)

@@ -37,7 +37,7 @@ void loadrom(struct rx5rom *rom, FILE *f) {
     errx(-1, "ROM too big");
   if (memcmp(rom->data, "\x00\x00\x00\x00", 4))
     errx(-1, "missing leading zeroes");
-  rom->nvoice = rom->data[RX5_NUM_VOICE];
+  rom->nvoice = rom->data[5];
   for (i = 0; i < rom->nvoice; i++)
-    loadvoice(rom->voice + i, rom->data + 6 + i * RX5_VOICE_SIZE);
+    loadvoice(rom->voice + i, rom->data + 6 + i * 32);
 }
