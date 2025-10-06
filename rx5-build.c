@@ -92,12 +92,12 @@ void putwav(FILE *f, int channel, char *filename) {
       u64 word = getle(p, blockalign) >> (wordsize - 12);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
-      q[0] = word;
+      q[0] = word >> 4;
       if (((p - data) / blockalign) & 1) { /* odd sample */
-        q[-2] |= word >> 8;
+        q[-2] |= (word & 0xf) << 4;
         q += 2;
       } else { /* even sample */
-        q[-1] = (word >> 8) << 4;
+        q[-1] = word & 0xf;
         q += 1;
       }
     }
