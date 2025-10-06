@@ -89,13 +89,9 @@ void putwav(FILE *f, int channel, char *filename) {
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += blockalign) {
-      int i;
-      u64 word;
+      u64 word = getle(p, blockalign) >> (wordsize - 12);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
-      for (i = blockalign - 1, word = 0; i >= 0; i--)
-        word = (word << 8) | p[i];
-      word >>= wordsize - 12; /* convert to 12-bit without dithering */
       q[0] = word;
       if (((p - data) / blockalign) & 1) { /* odd sample */
         q[-2] |= word >> 8;
