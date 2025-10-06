@@ -7,9 +7,11 @@ struct rx5voice {
   uint8_t ar, d1r, rr, d2r, d1l, gt;
   uint8_t bendrate, bendrange, unknown, level, channel;
 };
+#define RX5_ROM_SIZE (128 * 1024)
 struct rx5rom {
   struct rx5voice voice[256];
   int nvoice;
-  uint8_t data[128 * 1024];
+  uint8_t data[RX5_ROM_SIZE];
 };
 void loadrom(struct rx5rom *rom, FILE *f);
+void storevoices(struct rx5rom *rom) ;

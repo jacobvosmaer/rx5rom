@@ -44,7 +44,7 @@ void putwav(FILE *f, int channel, char *filename) {
   u8 *p, *wavend, *fmt, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
                   defaultvoice = {"      ", 2,  120, 0,  0,  0, 0, 0,  0,  99,
-                                  2,        59, 99,  60, 92, 0, 0, 99, 27, 0};
+                                  2,        60, 99,  59, 92, 0, 0, 99, 27, 0};
   u64 x;
   int nchannels, blockalign, wordsize, namelen;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
@@ -112,7 +112,6 @@ void putwav(FILE *f, int channel, char *filename) {
     memmove(rom.data + voice->pcmstart, data, datasize);
     voice->pcmend = voice->pcmstart + datasize;
   }
-  fprintf(stderr, "start=%x end=%x\n", voice->pcmstart, voice->pcmend);
 }
 int main(int argc, char **argv) {
   int i;
@@ -131,6 +130,7 @@ int main(int argc, char **argv) {
     putwav(f, channel, argv[i + 1]);
     fclose(f);
   }
+  storevoices(&rom);
   fwrite(rom.data, 1, sizeof(rom.data), stdout);
   return 0;
 }
