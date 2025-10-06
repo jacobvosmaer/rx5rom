@@ -12,8 +12,8 @@ typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef int64_t i64;
-u8 rom[128 * 1024], wav[(sizeof(rom) * 2) / 3 * 4];
-struct rx5voice voices[255];
+struct rx5rom rom;
+u8 wav[(sizeof(rom.data) * 2) / 3 * 4];
 int nvoices;
 u64 getle(u8 *p, int size) {
   u64 x = 0;
@@ -42,7 +42,7 @@ u8 *findchunk(char *ID, u8 *start, u8 *end) {
 void putwav(FILE *f, int channel, char *filename) {
   i64 wavsize, datasize;
   u8 *p, *wavend, *fmt, *data;
-  struct rx5voice *voice = voices + nvoices++,
+  struct rx5voice *voice = rom.voice + rom.nvoice++,
                   defaultvoice = {"      ", 2,  120, 0,  0,  0, 0, 0,  0,  99,
                                   2,        59, 99,  60, 92, 0, 0, 99, 27, 0};
   u64 x;
@@ -82,16 +82,16 @@ void putwav(FILE *f, int channel, char *filename) {
     namelen = 6;
   memmove(voice->name, filename, namelen);
   voice->pcmstart =
-      voice > voices ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
+      voice > rom.voice ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = wordsize > 8;
   voice->channel = channel;
   if (voice->pcmformat) { /* store 12-bit sample */
-    u8 *q = rom + voice->pcmstart + 2;
+    u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += blockalign) {
       int i;
       u64 word;
-      if (q >= rom + sizeof(rom))
+      if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
       for (i = blockalign - 1, word = 0; i >= 0; i--)
         word = (word << 8) | p[i];
@@ -105,11 +105,11 @@ void putwav(FILE *f, int channel, char *filename) {
         q += 1;
       }
     }
-    voice->pcmend = q - rom;
+    voice->pcmend = q - rom.data;
   } else { /* store 8-bit sample */
-    if (datasize > sizeof(rom) - voice->pcmstart)
+    if (datasize > sizeof(rom.data) - voice->pcmstart)
       errx(-1, NOSPACE);
-    memmove(rom + voice->pcmstart, data, datasize);
+    memmove(rom.data + voice->pcmstart, data, datasize);
     voice->pcmend = voice->pcmstart + datasize;
   }
   fprintf(stderr, "start=%x end=%x\n", voice->pcmstart, voice->pcmend);
@@ -131,6 +131,6 @@ int main(int argc, char **argv) {
     putwav(f, channel, argv[i + 1]);
     fclose(f);
   }
-  fwrite(rom, 1, sizeof(rom), stdout);
+  fwrite(rom.data, 1, sizeof(rom.data), stdout);
   return 0;
 }
