@@ -69,11 +69,20 @@ void loadrom(struct rx5rom *rom, FILE *f) {
   for (i = 0; i < rom->nvoice; i++)
     loadvoice(rom->voice + i, rom->data + 6 + i * 32);
 }
-void storevoices(struct rx5rom *rom) {
+uint16_t checksum(struct rx5rom *rom) {
+  uint16_t sum = 0;
   int i;
+  for (i = 0; i < 1022; i++)
+    sum += rom->data[i];
+  return sum;
+}
+void storevoices(struct rx5rom *rom) {
+  int i, sum;
   rom->data[5] = rom->nvoice;
   for (i = 0; i < rom->nvoice; i++)
     putvoice(rom->voice + i, rom->data + 6 + i * 32);
-  /* TODO write checksum */
+  sum = checksum(rom);
+  rom->data[1022] = sum >> 8;
+  rom->data[1023] = sum;
   /* TODO generate ROM ID */
 }
