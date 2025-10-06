@@ -24,7 +24,6 @@ u64 getle(u8 *p, int size) {
   return x;
 }
 #define CHUNK_HEADER 8
-/* nextchunk adds padding in case size is odd */
 u64 nextchunk(u32 size) { return CHUNK_HEADER + (u64)size + (size & 1); }
 u8 *findchunk(char *ID, u8 *start, u8 *end) {
   u8 *p = start;
@@ -85,7 +84,7 @@ void putwav(FILE *f, int channel, char *filename) {
       voice > rom.voice ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = wordsize > 8;
-  voice->channel = channel;
+  voice->channel = channel - 1;
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += blockalign) {
