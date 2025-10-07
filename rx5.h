@@ -14,4 +14,4 @@ struct rx5rom {
   uint8_t data[RX5_ROM_SIZE];
 };
 void loadrom(struct rx5rom *rom, FILE *f);
-void storevoices(struct rx5rom *rom) ;
+void storevoices(struct rx5rom *rom);
