@@ -1,13 +1,23 @@
 /* wav.c: write 16-bit wav file */
+#include "wav.h"
 #include <stdint.h>
 #include <stdio.h>
 #define assert(x)                                                              \
   if (!(x))                                                                    \
   __builtin_trap()
-void putle(unsigned x, int n, FILE *f) {
+static void putle(unsigned x, int n, FILE *f) {
   for (; n > 0; n--, x >>= 8)
     fputc(x & 0xff, f);
 }
+static uint64_t getle(uint8_t *p, int size) {
+  uint64_t x = 0;
+  assert(size > 0 && size < 9);
+  p += size;
+  while (size--)
+    x = (x << 8) | *--p;
+  return x;
+}
+
 /* Based on information from
  * https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html */
 void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
@@ -36,4 +46,13 @@ void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
     fputc(pcmdata[i] & 0xff, f);
     fputc(pcmdata[i] >> 8, f);
   }
+}
+struct wavfmt loadfmt(uint8_t *p) {
+  struct wavfmt fmt = {0};
+  fmt.formattag = getle(p + 8, 2);
+  fmt.channels = getle(p + 10, 2);
+  fmt.samplespersec = getle(p + 12, 4);
+  fmt.avgbytespersec = getle(p + 16, 4);
+  fmt.blockalign = getle(p + 20, 2);
+  return fmt;
 }

@@ -1,5 +1,6 @@
 /* rx5-build: build RX5 ROM out of WAV files */
 #include "rx5.h"
+#include "wav.h"
 #include <err.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -40,12 +41,13 @@ u8 *findchunk(char *ID, u8 *start, u8 *end) {
 #define NOSPACE "not enough space in ROM for sample"
 void putwav(FILE *f, int channel, char *filename) {
   i64 wavsize, datasize;
-  u8 *p, *wavend, *fmt, *data;
+  u8 *p, *wavend, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
                   defaultvoice = {"      ", 2,  120, 0,  0,  0, 0, 0,  0,  99,
                                   2,        60, 99,  59, 92, 0, 0, 99, 27, 0};
+  struct wavfmt fmt;
   u64 x;
-  int nchannels, blockalign, wordsize, namelen;
+  int wordsize, namelen;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
     errx(-1, "WAV file too big");
   if (wavsize < 12)
@@ -59,22 +61,22 @@ void putwav(FILE *f, int channel, char *filename) {
     errx(-1, "missing WAVE header");
   if (p = findchunk("fmt ", wav + 12, wavend), p == wavend)
     errx(-1, "fmt chunk not found");
-  if (x = getle(p + 4, 4), x != 16)
+  if (x = getle(p + 4, 4), x < 14)
     errx(-1, "unsupported WAV fmt size: %llu", x);
-  fmt = p + 8;
-  if (x = getle(fmt, 2), x != 1)
-    errx(-1, "unsupported WAV format: %llu", x);
-  if (nchannels = getle(fmt + 2, 2), nchannels != 1)
-    errx(-1, "unsupported number of channels: %d", nchannels);
-  if (x = getle(fmt + 4, 4), x != 25000)
-    warnx("warning: samplerate is not 25kHz: %llu", x);
-  if (blockalign = getle(fmt + 12, 2), !blockalign)
-    errx(-1, "invalid blockalign: %d", blockalign);
+  fmt = loadfmt(p);
+  if (fmt.formattag != 1)
+    errx(-1, "unsupported WAV format: %d", fmt.formattag);
+  if (fmt.channels != 1)
+    errx(-1, "unsupported number of channels: %d", fmt.channels);
+  if (fmt.samplespersec != 25000)
+    warnx("warning: samplerate is not 25kHz: %d", fmt.samplespersec);
+  if (!fmt.blockalign)
+    errx(-1, "invalid fmt.blockalign: %d", fmt.blockalign);
   if (p = findchunk("data", wav + 12, wavend), p == wavend)
     errx(-1, "WAV data section not found");
   data = p + 8;
   datasize = getle(p + 4, 4);
-  wordsize = (8 * blockalign) / nchannels;
+  wordsize = (8 * fmt.blockalign) / fmt.channels;
   assert(wordsize >= 8);
   *voice = defaultvoice;
   if (namelen = strlen(filename), namelen > 6)
@@ -87,12 +89,12 @@ void putwav(FILE *f, int channel, char *filename) {
   voice->channel = channel - 1;
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
-    for (p = data; p < data + datasize; p += blockalign) {
-      u64 word = getle(p, blockalign) >> (wordsize - 12);
+    for (p = data; p < data + datasize; p += fmt.blockalign) {
+      u64 word = getle(p, fmt.blockalign) >> (wordsize - 12);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
-      if (((p - data) / blockalign) & 1) { /* odd sample */
+      if (((p - data) / fmt.blockalign) & 1) { /* odd sample */
         q[-2] |= (word & 0xf) << 4;
         q += 2;
       } else { /* even sample */
