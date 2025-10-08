@@ -95,7 +95,7 @@ void putwav(FILE *f, int channel, char *filename) {
         errx(-1, NOSPACE);
       q[0] = word >> 4;
       if (((p - data) / fmt.blockalign) & 1) { /* odd sample */
-        q[-2] |= (word & 0xf) << 4;
+        q[-2] |= word << 4;
         q += 2;
       } else { /* even sample */
         q[-1] = word & 0xf;
