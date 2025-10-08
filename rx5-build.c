@@ -133,6 +133,7 @@ int main(void) {
       FILE *f = fopen(s, "rb");
       if (!f)
         err(-1, "%s", s);
+      warnx("adding %s", s);
       putwav(f, s);
       fclose(f);
     } else if (s = startwith(line, "name "), s) {
