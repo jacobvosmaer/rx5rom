@@ -2,10 +2,15 @@
 #include "rx5.h"
 #include "wav.h"
 #include <err.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef offsetof
+#define offsetof(t, f) (size_t)((char *)&((t *)0)->f - (char *)0)
+#endif
+#define nelem(x) (sizeof(x) / sizeof(*(x)))
 #define assert(x)                                                              \
   if (!(x))                                                                    \
   __builtin_trap()
@@ -111,12 +116,12 @@ void putwav(FILE *f, char *filename) {
 char *startwith(char *s, char *prefix) {
   return strstr(s, prefix) == s ? s + strlen(prefix) : 0;
 }
-void putparam(uint8_t *addr, char *s, int min, int max, char *name) {
+void putparam(u8 *addr, char *s, int min, int max, char *name) {
   int x = atoi(s);
   if (!rom.nvoice)
-    errx(-1, "%s before file statement", name);
+    errx(-1, "%sbefore file statement", name);
   if (x < min || x > max)
-    errx(-1, "%s out of range: %s", name, s);
+    errx(-1, "%sout of range: %s", name, s);
   *addr = x;
 }
 char line[1024];
@@ -141,21 +146,38 @@ int main(void) {
         errx(-1, "name before file statement");
       strncpy(v->name, s, 6);
     } else if (s = startwith(line, "channel "), s) {
-      putparam(&v->channel, s, 1, 12, "channel");
+      putparam(&v->channel, s, 1, 12, "channel ");
       v->channel--;
-    } else if (s = startwith(line, "attackrate "), s) {
-      putparam(&v->ar, s, 0, 99, "attackrate");
-    } else if (s = startwith(line, "decay1rate "), s) {
-      putparam(&v->d1r, s, 0, 99, "decay1rate");
-    } else if (s = startwith(line, "decay1level "), s) {
-      putparam(&v->d1l, s, 0, 60, "decay1level");
-    } else if (s = startwith(line, "decay2rate "), s) {
-      putparam(&v->d2r, s, 0, 99, "decay2rate");
-    } else if (s = startwith(line, "releaserate "), s) {
-      putparam(&v->rr, s, 0, 99, "releaserate");
-    } else if (s = startwith(line, "level "), s) {
-      putparam(&v->level, s, 0, 31, "level");
     } else {
+      struct {
+        ptrdiff_t offset;
+        char *prefix;
+        int min, max;
+      } params[] =
+          {
+              {offsetof(struct rx5voice, octave), "octave ", 0, 4},
+              {offsetof(struct rx5voice, note), "note ", 0, 120},
+              {offsetof(struct rx5voice, ar), "attackrate ", 0, 99},
+              {offsetof(struct rx5voice, d1r), "decay1rate ", 0, 99},
+              {offsetof(struct rx5voice, d1l), "decay1level ", 0, 60},
+              {offsetof(struct rx5voice, d2r), "decay2rate ", 0, 99},
+              {offsetof(struct rx5voice, rr), "releaserate ", 0, 99},
+              {offsetof(struct rx5voice, gt), "gatetime ", 0, 255},
+              {offsetof(struct rx5voice, bendrate), "bendrate ", 0, 255},
+              {offsetof(struct rx5voice, bendrange), "bendrange ", 0, 255},
+              {offsetof(struct rx5voice, unknown), "unknown ", 0, 255},
+              {offsetof(struct rx5voice, level), "level ", 0, 31},
+              {offsetof(struct rx5voice, channel), "channel ", 1, 12},
+          },
+        *pp;
+      for (pp = params; pp < params + nelem(params); pp++) {
+        if (s = startwith(line, pp->prefix), s) {
+          putparam((u8 *)v + pp->offset, s, pp->min, pp->max, pp->prefix);
+          break;
+        }
+      }
+      if (pp < params + nelem(params))
+        continue;
       errx(-1, "invalid statement: %s", line);
     }
   }
