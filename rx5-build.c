@@ -47,7 +47,7 @@ void putwav(FILE *f, char *filename) {
                                   2,        60, 99,  59, 92, 0, 0, 99, 27, 0};
   struct wavfmt fmt;
   u64 x;
-  int wordsize, namelen;
+  int wordsize;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
     errx(-1, "WAV file too big");
   if (wavsize < 12)
@@ -79,9 +79,7 @@ void putwav(FILE *f, char *filename) {
   wordsize = (8 * fmt.blockalign) / fmt.channels;
   assert(wordsize >= 8);
   *voice = defaultvoice;
-  if (namelen = strlen(filename), namelen > 6)
-    namelen = 6;
-  memmove(voice->name, filename, namelen);
+  strncpy(voice->name, filename, 6);
   voice->pcmstart =
       voice > rom.voice ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
   voice->loopstart = voice->loopend = voice->pcmstart;
@@ -110,12 +108,21 @@ void putwav(FILE *f, char *filename) {
     voice->pcmend = voice->pcmstart + datasize;
   }
 }
-char line[1024];
 char *startwith(char *s, char *prefix) {
   return strstr(s, prefix) == s ? s + strlen(prefix) : 0;
 }
+void putparam(uint8_t *addr, char *s, int min, int max, char *name) {
+  int x = atoi(s);
+  if (!rom.nvoice)
+    errx(-1, "%s before file statement", name);
+  if (x < min || x > max)
+    errx(-1, "%s out of range: %s", name, s);
+  *addr = x;
+}
+char line[1024];
 int main(void) {
   while (fgets(line, sizeof(line), stdin)) {
+    struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
     if (!eol)
       errx(-1, "missing newline in input");
@@ -127,13 +134,26 @@ int main(void) {
       if (!f)
         err(-1, "%s", s);
       putwav(f, s);
-    } else if (s = startwith(line, "channel "), s) {
-      int channel = atoi(s);
-      if (channel < 1 || channel > 12)
-        errx(-1, "invalid channel: %s", s);
+      fclose(f);
+    } else if (s = startwith(line, "name "), s) {
       if (!rom.nvoice)
-        errx(-1, "channel before file statement");
-      rom.voice[rom.nvoice - 1].channel = channel - 1;
+        errx(-1, "name before file statement");
+      strncpy(v->name, s, 6);
+    } else if (s = startwith(line, "channel "), s) {
+      putparam(&v->channel, s, 1, 12, "channel");
+      v->channel--;
+    } else if (s = startwith(line, "attackrate "), s) {
+      putparam(&v->ar, s, 0, 99, "attackrate");
+    } else if (s = startwith(line, "decay1rate "), s) {
+      putparam(&v->d1r, s, 0, 99, "decay1rate");
+    } else if (s = startwith(line, "decay1level "), s) {
+      putparam(&v->d1l, s, 0, 60, "decay1level");
+    } else if (s = startwith(line, "decay2rate "), s) {
+      putparam(&v->d2r, s, 0, 99, "decay2rate");
+    } else if (s = startwith(line, "releaserate "), s) {
+      putparam(&v->rr, s, 0, 99, "releaserate");
+    } else if (s = startwith(line, "level "), s) {
+      putparam(&v->level, s, 0, 31, "level");
     } else {
       errx(-1, "invalid statement: %s", line);
     }
