@@ -39,7 +39,7 @@ u8 *findchunk(char *ID, u8 *start, u8 *end) {
   return end;
 }
 #define NOSPACE "not enough space in ROM for sample"
-void putwav(FILE *f, int channel, char *filename) {
+void putwav(FILE *f, char *filename) {
   i64 wavsize, datasize;
   u8 *p, *wavend, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
@@ -86,7 +86,7 @@ void putwav(FILE *f, int channel, char *filename) {
       voice > rom.voice ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = wordsize > 8;
-  voice->channel = channel - 1;
+  voice->channel = (rom.nvoice - 1) % 12;
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
@@ -110,24 +110,34 @@ void putwav(FILE *f, int channel, char *filename) {
     voice->pcmend = voice->pcmstart + datasize;
   }
 }
-int main(int argc, char **argv) {
-  int i;
-  if (argc < 3 || !(argc & 1))
-    errx(-1, "Usage: rx5-build CHANNEL WAV [CHANNEL WAV...]");
-  if (argc > 511)
-    errx(-1, "too many voices: maximum is 255");
-  for (i = 1; i < argc; i += 2) {
-    FILE *f;
-    int channel = atoi(argv[i]);
-    if (channel < 1 || channel > 12)
-      errx(-1, "invalid channel: %s", argv[i]);
-    if (f = fopen(argv[i + 1], "rb"), !f)
-      err(-1, "open %s", argv[i + 1]);
-    fprintf(stderr, "%s\n", argv[i + 1]);
-    putwav(f, channel, argv[i + 1]);
-    fclose(f);
+char line[1024];
+char *startwith(char *s, char *prefix) {
+  return strstr(s, prefix) == s ? s + strlen(prefix) : 0;
+}
+int main(void) {
+  while (fgets(line, sizeof(line), stdin)) {
+    char *s, *eol = strchr(line, '\n');
+    if (!eol)
+      errx(-1, "missing newline in input");
+    *eol = 0;
+    if (*line == '#')
+      continue;
+    if (s = startwith(line, "file "), s) {
+      FILE *f = fopen(s, "rb");
+      if (!f)
+        err(-1, "%s", s);
+      putwav(f, s);
+    } else if (s = startwith(line, "channel "), s) {
+      int channel = atoi(s);
+      if (channel < 1 || channel > 12)
+        errx(-1, "invalid channel: %s", s);
+      if (!rom.nvoice)
+        errx(-1, "channel before file statement");
+      rom.voice[rom.nvoice - 1].channel = channel - 1;
+    } else {
+      errx(-1, "invalid statement: %s", line);
+    }
   }
   storevoices(&rom);
-  fwrite(rom.data, 1, sizeof(rom.data), stdout);
-  return 0;
+  return !fwrite(rom.data, sizeof(rom.data), 1, stdout);
 }
