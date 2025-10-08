@@ -56,7 +56,7 @@ void putwav(FILE *f, char *filename) {
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
     errx(-1, "WAV file too big");
   if (wavsize < 12)
-    errx(-1, "WAV file too smal");
+    errx(-1, "WAV file too small");
   wavend = wav + wavsize;
   if (memcmp(wav, "RIFF", 4))
     errx(-1, "missing RIFF header");
