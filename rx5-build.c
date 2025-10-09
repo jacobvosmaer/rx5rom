@@ -23,10 +23,8 @@ u8 wav[(sizeof(rom.data) * 2) / 3 * 4];
 int nvoices;
 u64 getle(u8 *p, int size) {
   u64 x = 0;
-  assert(size > 0 && size < 9);
-  p += size;
   while (size--)
-    x = (x << 8) | *--p;
+    x = (x << 8) | p[size];
   return x;
 }
 #define CHUNK_HEADER 8

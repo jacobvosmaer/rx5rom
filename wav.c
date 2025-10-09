@@ -11,13 +11,10 @@ static void putle(unsigned x, int n, FILE *f) {
 }
 static uint64_t getle(uint8_t *p, int size) {
   uint64_t x = 0;
-  assert(size > 0 && size < 9);
-  p += size;
   while (size--)
-    x = (x << 8) | *--p;
+    x = (x << 8) | p[size];
   return x;
 }
-
 /* Based on information from
  * https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html */
 void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
