@@ -52,7 +52,7 @@ void putwav(FILE *f, char *filename) {
                                   2,        60, 99,  59, 92, 0, 0, 99, 27, 0};
   struct wavfmt fmt;
   u64 x;
-  int wordsize;
+  int wordsize, firstvoice = voice == rom.voice;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
     errx(-1, "WAV file too big");
   if (wavsize < 12)
@@ -85,11 +85,10 @@ void putwav(FILE *f, char *filename) {
   assert(wordsize >= 8);
   *voice = defaultvoice;
   strncpy(voice->name, filename, 6);
-  voice->pcmstart =
-      voice > rom.voice ? ((voice - 1)->pcmend + 0xff) & ~0xff : 0x400;
+  voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & ~0xff;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = wordsize > 8;
-  voice->channel = (rom.nvoice - 1) % 12;
+  voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
