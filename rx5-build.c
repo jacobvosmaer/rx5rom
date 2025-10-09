@@ -30,7 +30,6 @@ u64 getle(u8 *p, int size) {
   return x;
 }
 #define CHUNK_HEADER 8
-u64 nextchunk(u32 size) { return CHUNK_HEADER + (u64)size + (size & 1); }
 u8 *findchunk(char *ID, u8 *start, u8 *end) {
   u8 *p = start;
   while (p < end - CHUNK_HEADER) {
@@ -39,7 +38,7 @@ u8 *findchunk(char *ID, u8 *start, u8 *end) {
       errx(-1, "chunk %4.4s: invalid size %d", p, size);
     if (!memcmp(p, ID, 4))
       return p;
-    p += nextchunk(size);
+    p += CHUNK_HEADER + (u64)size + (size & 1);
   }
   return end;
 }
