@@ -1,4 +1,4 @@
-/* rx5-ls: list contents of Yamaha RX5 ROM dump */
+/* rx5-split: extract WAV files from Yamaha RX5 ROM dump */
 #include "rx5.h"
 #include <err.h>
 #include <stdint.h>
