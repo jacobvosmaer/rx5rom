@@ -146,9 +146,6 @@ int main(void) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
       strncpy(v->name, s, 6);
-    } else if (s = matchfield(line, "channel"), s) {
-      putparam(&v->channel, s, 1, 12, "channel ");
-      v->channel--;
     } else {
       struct {
         ptrdiff_t offset;
@@ -168,7 +165,7 @@ int main(void) {
               {offsetof(struct rx5voice, bendrange), "bendrange", 0, 255},
               {offsetof(struct rx5voice, unknown), "unknown", 0, 255},
               {offsetof(struct rx5voice, level), "level", 0, 31},
-              {offsetof(struct rx5voice, channel), "channel", 1, 12},
+              {offsetof(struct rx5voice, channel), "channel", 0, 11},
           },
         *pp;
       for (pp = params; pp < params + nelem(params); pp++) {

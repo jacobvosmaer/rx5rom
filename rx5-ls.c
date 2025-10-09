@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     printf("Bend: rate %d range %d\n", v->bendrate, v->bendrange);
     printf("Unknown: %d\n", v->unknown);
     printf("Level: %d\n", v->level);
-    printf("Channel: %d\n", v->channel + 1);
+    printf("Channel: %d\n", v->channel);
   }
   return 0;
 }
