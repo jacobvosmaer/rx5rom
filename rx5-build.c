@@ -116,14 +116,6 @@ char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
   return strstr(s, field) == s && *tail == ' ' ? tail + 1 : 0;
 }
-void putparam(u8 *addr, char *s, int min, int max, char *name) {
-  int x = atoi(s);
-  if (!rom.nvoice)
-    errx(-1, "%s before file statement", name);
-  if (x < min || x > max)
-    errx(-1, "%s out of range: %s", name, s);
-  *addr = x;
-}
 char line[1024];
 int main(void) {
   while (fgets(line, sizeof(line), stdin)) {
@@ -169,7 +161,12 @@ int main(void) {
         *pp;
       for (pp = params; pp < params + nelem(params); pp++) {
         if (s = matchfield(line, pp->field), s) {
-          putparam((u8 *)v + pp->offset, s, pp->min, pp->max, pp->field);
+          int x = atoi(s);
+          if (!rom.nvoice)
+            errx(-1, "%s before file statement", pp->field);
+          if (x < pp->min || x > pp->max)
+            errx(-1, "%s out of range: %s", pp->field, s);
+          ((u8 *)v)[pp->offset] = x;
           break;
         }
       }
