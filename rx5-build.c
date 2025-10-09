@@ -178,5 +178,9 @@ int main(void) {
     }
   }
   storevoices(&rom);
+  warnx("PCM data space left: %lu bytes",
+        (sizeof(rom.data) -
+         (rom.nvoice ? rom.voice[rom.nvoice - 1].pcmend : 0x400)) &
+            ~0xff);
   return !fwrite(rom.data, sizeof(rom.data), 1, stdout);
 }
