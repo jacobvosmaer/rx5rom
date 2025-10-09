@@ -13,6 +13,7 @@ install: all
 dev: CFLAGS += -Werror -g
 dev: all
 rx5.o: rx5.h
+wav.o: wav.h
 rx5-ls: rx5.o
 rx5-split: wav.o rx5.o
 rx5-program: CFLAGS += $(shell pkg-config --cflags $(HIDAPI))
