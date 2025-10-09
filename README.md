@@ -7,6 +7,8 @@ Utilities for working with Yamaha RX5 wave ROM dumps.
 - `rx5-program`: upload 1 or more ROM data files to RX5USB hardware (using [hidapi](https://github.com/libusb/hidapi))
 - `rx5-build`: assemble WAV files into a ROM image
 
+If you are using Windows you may want to use the [original RX5USB software](https://github.com/gligli/rx5usb) instead.
+
 ## Programming example
 
 rx5-program takes two arguments: the first slot to write to (0-3) and
