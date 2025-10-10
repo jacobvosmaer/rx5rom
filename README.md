@@ -41,11 +41,14 @@ The ROM builder `rx5-build` reads a ROM description from standard input and writ
 
 All parameters use the native numerical format of the ROM dumps. For example, `channel` starts at 0. Channels automatically increment from file to file.
 
+By default, the voice name is the first 6 characters of the filename. You can override this by adding a `name` statement.
+
 Syntax example:
 
 ```
-# Add kick.wav with custom envelope settings
+# Add kick.wav with custom envelope settings and name
 file kick.wav
+name Kick!!
 decay1rate 50
 decay1level 0
 # Add rim.wav with default settings
