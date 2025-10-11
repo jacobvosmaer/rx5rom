@@ -7,11 +7,24 @@ struct rx5voice {
   uint8_t ar, d1r, rr, d2r, d1l, gt;
   uint8_t bendrate, bendrange, unknown, level, channel;
 };
-#define RX5_ROM_SIZE (128 * 1024)
 struct rx5rom {
   struct rx5voice voice[256];
   int nvoice;
-  uint8_t data[RX5_ROM_SIZE];
+  uint8_t data[128 * 1024];
 };
 void loadrom(struct rx5rom *rom, FILE *f);
 void storevoices(struct rx5rom *rom);
+#define fNAME "name"
+#define fOCTAVE "octave"
+#define fNOTE "note"
+#define fATTACKRATE "attackrate"
+#define fDECAY1RATE "decay1rate"
+#define fDECAY1LEVEL "decay1level"
+#define fDECAY2RATE "decay2rate"
+#define fRELEASERATE "releaserate"
+#define fGATETIME "gatetime"
+#define fBENDRATE "bendrate"
+#define fBENDRANGE "bendrange"
+#define fUNKNOWN "unknown"
+#define fLEVEL "level"
+#define fCHANNEL "channel"

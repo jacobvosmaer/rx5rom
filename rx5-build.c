@@ -130,7 +130,7 @@ int main(void) {
       warnx("adding %s", s);
       putwav(f, s);
       fclose(f);
-    } else if (s = matchfield(line, "name"), s) {
+    } else if (s = matchfield(line, fNAME), s) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
       strncpy(v->name, s, 6);
@@ -141,19 +141,19 @@ int main(void) {
         int min, max;
       } params[] =
           {
-              {offsetof(struct rx5voice, octave), "octave", 0, 4},
-              {offsetof(struct rx5voice, note), "note", 0, 120},
-              {offsetof(struct rx5voice, ar), "attackrate", 0, 99},
-              {offsetof(struct rx5voice, d1r), "decay1rate", 0, 99},
-              {offsetof(struct rx5voice, d1l), "decay1level", 0, 60},
-              {offsetof(struct rx5voice, d2r), "decay2rate", 0, 99},
-              {offsetof(struct rx5voice, rr), "releaserate", 0, 99},
-              {offsetof(struct rx5voice, gt), "gatetime", 0, 255},
-              {offsetof(struct rx5voice, bendrate), "bendrate", 0, 255},
-              {offsetof(struct rx5voice, bendrange), "bendrange", 0, 255},
-              {offsetof(struct rx5voice, unknown), "unknown", 0, 255},
-              {offsetof(struct rx5voice, level), "level", 0, 31},
-              {offsetof(struct rx5voice, channel), "channel", 0, 11},
+              {offsetof(struct rx5voice, octave), fOCTAVE, 0, 4},
+              {offsetof(struct rx5voice, note), fNOTE, 0, 120},
+              {offsetof(struct rx5voice, ar), fATTACKRATE, 0, 99},
+              {offsetof(struct rx5voice, d1r), fDECAY1RATE, 0, 99},
+              {offsetof(struct rx5voice, d1l), fDECAY1LEVEL, 0, 60},
+              {offsetof(struct rx5voice, d2r), fDECAY2RATE, 0, 99},
+              {offsetof(struct rx5voice, rr), fRELEASERATE, 0, 99},
+              {offsetof(struct rx5voice, gt), fGATETIME, 0, 255},
+              {offsetof(struct rx5voice, bendrate), fBENDRATE, 0, 255},
+              {offsetof(struct rx5voice, bendrange), fBENDRANGE, 0, 255},
+              {offsetof(struct rx5voice, unknown), fUNKNOWN, 0, 255},
+              {offsetof(struct rx5voice, level), fLEVEL, 0, 31},
+              {offsetof(struct rx5voice, channel), fCHANNEL, 0, 11},
           },
         *pp;
       for (pp = params; pp < params + nelem(params); pp++) {
