@@ -40,6 +40,12 @@ u8 *findchunk(char *ID, u8 *start, u8 *end) {
   }
   return end;
 }
+void putname(char *dst, char *s) {
+  char *p;
+  for (p = dst; p < dst + 6; p++)
+    *p = *s ? *s++ : ' ';
+  *p = 0;
+}
 #define NOSPACE "not enough space in ROM for sample"
 void putwav(FILE *f, char *filename) {
   i64 wavsize, datasize;
@@ -81,7 +87,7 @@ void putwav(FILE *f, char *filename) {
   wordsize = (8 * fmt.blockalign) / fmt.channels;
   assert(wordsize >= 8);
   *voice = defaultvoice;
-  strncpy(voice->name, filename, 6);
+  putname(voice->name, filename);
   voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & ~0xff;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = wordsize > 8;
@@ -133,7 +139,7 @@ int main(void) {
     } else if (s = matchfield(line, fNAME), s) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
-      strncpy(v->name, s, 6);
+      putname(v->name, s);
     } else {
       struct {
         ptrdiff_t offset;
