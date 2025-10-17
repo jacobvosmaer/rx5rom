@@ -24,7 +24,7 @@ int usbwrite(usbdev *dev, uint8_t *msg) {
 int usbread(usbdev *dev, uint8_t *msg) {
   return hid_read(dev, msg, MSGSIZE) != MSGSIZE;
 }
-uint8_t request[MSGSIZE] = "RX5\x01", response[MSGSIZE];
+uint8_t request[MSGSIZE], response[MSGSIZE];
 void putle(uint8_t *p, uint64_t x, int n) {
   for (; n--; x >>= 8)
     *p++ = x;
@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
   size *= BANKSIZE;
   if (dev = usbopen(), !dev)
     errx(-1, "failed to open usb device");
+  memmove(request, "RX5\x01", 4);
   putle(request + 4, address, 4);
   putle(request + 8, size, 4);
   if (usbwrite(dev, request))
