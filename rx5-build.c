@@ -17,6 +17,7 @@
 typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
+typedef int32_t i32;
 typedef int64_t i64;
 struct rx5rom rom;
 u8 wav[(sizeof(rom.data) * 2) / 3 * 4];
@@ -119,8 +120,15 @@ char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
   return strstr(s, field) == s && *tail == ' ' ? tail + 1 : 0;
 }
+i32 readaddr(char *s) {
+  int x = atoi(s);
+  if (x < 0 || x > sizeof(rom.data))
+    errx(-1, "invalid %s address: %d", s, x);
+  return x;
+}
 char line[1024];
 int main(void) {
+  i32 pcmstart;
   while (fgets(line, sizeof(line), stdin)) {
     struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
@@ -135,11 +143,18 @@ int main(void) {
         err(-1, "%s", s);
       warnx("adding %s", s);
       putwav(f, s);
+      pcmstart = 0;
       fclose(f);
     } else if (s = matchfield(line, fNAME), s) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
       putname(v->name, s);
+    } else if (s = matchfield(line, fPCMSTART), s) {
+      pcmstart = readaddr(s);
+    } else if (s = matchfield(line, fLOOPSTART), s) {
+      v->loopstart = v->pcmstart + (readaddr(s) - pcmstart);
+    } else if (s = matchfield(line, fLOOPEND), s) {
+      v->loopend = v->pcmstart + (readaddr(s) - pcmstart);
     } else {
       struct {
         ptrdiff_t offset;
@@ -149,6 +164,7 @@ int main(void) {
           {
               {offsetof(struct rx5voice, octave), fOCTAVE, 0, 4},
               {offsetof(struct rx5voice, note), fNOTE, 0, 120},
+              {offsetof(struct rx5voice, loop), fLOOP, 0, 1},
               {offsetof(struct rx5voice, ar), fATTACKRATE, 0, 99},
               {offsetof(struct rx5voice, d1r), fDECAY1RATE, 0, 99},
               {offsetof(struct rx5voice, d1l), fDECAY1LEVEL, 0, 60},

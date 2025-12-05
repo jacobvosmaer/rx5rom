@@ -27,6 +27,9 @@ The ROM builder `rx5-build` reads a ROM description from standard input and writ
 
 - octave
 - note
+- loop
+- loopstart
+- loopend
 - attackrate
 - decay1rate
 - decay1level
@@ -69,8 +72,6 @@ ls *.wav | sed 's/^/file /' | rx5-build > rom.bin
 ### Bugs
 
 Some samples play back incorrectly when using the "reverse" mode on the RX5. Others reverse just fine.
-
-There is currently no support for adding loop points.
 
 ## Credits
 

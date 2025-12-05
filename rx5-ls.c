@@ -21,11 +21,11 @@ int main(int argc, char **argv) {
     printf(fOCTAVE " %d\n", v->octave);
     printf(fNOTE " %d\n", v->note);
     printf("pcmformat %s\n", v->pcmformat ? "12-bit" : "8-bit");
-    printf("loop %d\n", v->loop);
-    printf("pcmstart 0x%x\n", v->pcmstart);
-    printf("loopstart 0x%x\n", v->loopstart);
-    printf("loopend 0x%x\n", v->loopend);
-    printf("pcmend 0x%x\n", v->pcmend);
+    printf(fLOOP " %d\n", v->loop);
+    printf(fPCMSTART " 0x%x\n", v->pcmstart);
+    printf(fLOOPSTART " 0x%x\n", v->loopstart);
+    printf(fLOOPEND " 0x%x\n", v->loopend);
+    printf(fPCMEND " 0x%x\n", v->pcmend);
     printf(fATTACKRATE " %d\n" fDECAY1RATE " %d\n" fDECAY1LEVEL
                        " %d\n" fDECAY2RATE " %d\n" fRELEASERATE
                        " %d\n" fGATETIME " %d\n",
