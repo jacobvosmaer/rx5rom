@@ -13,7 +13,7 @@ struct rx5rom {
   uint8_t data[128 * 1024];
 };
 void loadrom(struct rx5rom *rom, FILE *f);
-void storevoices(struct rx5rom *rom);
+void storevoices(struct rx5rom *rom, int id);
 #define fNAME "name"
 #define fOCTAVE "octave"
 #define fNOTE "note"

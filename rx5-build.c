@@ -128,7 +128,7 @@ i32 readaddr(char *s) {
 }
 char line[1024];
 int main(void) {
-  i32 pcmstart;
+  i32 pcmstart, romid = -1;
   while (fgets(line, sizeof(line), stdin)) {
     struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
@@ -137,7 +137,14 @@ int main(void) {
     *eol = 0;
     if (*line == '#')
       continue;
-    if (s = matchfield(line, "file"), s) {
+    if (s = matchfield(line, "romid"), s) {
+      int x = atoi(s);
+      if (rom.nvoice)
+        errx(-1, "romid after file statement");
+      if (x < 0 || x > 255)
+        errx(-1, "invalid romid: %d", x);
+      romid = x;
+    } else if (s = matchfield(line, "file"), s) {
       FILE *f = fopen(s, "rb");
       if (!f)
         err(-1, "%s", s);
@@ -193,7 +200,7 @@ int main(void) {
         errx(-1, "invalid statement: %s", line);
     }
   }
-  storevoices(&rom);
+  storevoices(&rom, romid);
   warnx("PCM data space left: %lu bytes",
         (sizeof(rom.data) -
          (rom.nvoice ? rom.voice[rom.nvoice - 1].pcmend : 0x400)) &

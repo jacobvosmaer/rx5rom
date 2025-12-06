@@ -76,14 +76,14 @@ uint16_t checksum(struct rx5rom *rom, int n) {
     sum += rom->data[i];
   return sum;
 }
-void storevoices(struct rx5rom *rom) {
+void storevoices(struct rx5rom *rom, int id) {
   int i, sum;
   rom->data[5] = rom->nvoice;
   for (i = 0; i < rom->nvoice; i++)
     putvoice(rom->voice + i, rom->data + 6 + i * 32);
   sum = checksum(rom, 1022);
-  rom->data[4] = (sum & 0xff) ^ (sum >> 8); /* ROM ID */
-  /* re-calculate checksum because ROM ID changed it */
+  rom->data[4] = id < 0 ? (sum & 0xff) ^ (sum >> 8) : id;
+  /* re-calculate checksum because ROM ID may have changed it */
   sum = checksum(rom, 1022);
   rom->data[1022] = sum >> 8;
   rom->data[1023] = sum;

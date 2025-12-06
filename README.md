@@ -28,7 +28,7 @@ cat WRC01A.rx5bank WRC01B.rx5bank WRC02A.rx5bank WRC02A.rx5bank | rx5-program 0 
 
 ## Building ROM images
 
-The ROM builder `rx5-build` reads a ROM description from standard input and writes the resulting 128KB ROM image to stdout. A description consists of one or more file sections, which start with `file /path/to/some-file.wav`. The path to the wav file may not contain a newline character. Optionally, you can set one of the following parameters on the current file:
+The ROM builder `rx5-build` reads a ROM description from standard input and writes the resulting 128KB ROM image to stdout. A description consists of an optional `romid` followed by one or more file sections, which start with `file /path/to/some-file.wav`. The path to the wav file may not contain a newline character. Optionally, you can set one of the following parameters on the current file:
 
 - octave
 - note
