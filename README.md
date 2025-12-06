@@ -9,6 +9,11 @@ Utilities for working with Yamaha RX5 wave ROM dumps.
 
 If you are using Windows you may want to use the [original RX5USB software](https://github.com/gligli/rx5usb) instead.
 
+Also see:
+
+- [YouTube demo](https://www.youtube.com/watch?v=c1J6XAVyTX0)
+- [Blog post](https://blog.jacobvosmaer.nl/0064-rx5usb-software/)
+
 ## Programming example
 
 rx5-program takes two arguments: the first slot to write to (0-3) and
