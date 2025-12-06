@@ -15,6 +15,7 @@
   if (!(x))                                                                    \
   __builtin_trap()
 typedef uint8_t u8;
+typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef int32_t i32;
@@ -48,7 +49,7 @@ void putname(char *dst, char *s) {
   *p = 0;
 }
 #define NOSPACE "not enough space in ROM for sample"
-void putwav(FILE *f, char *filename) {
+void putwav(FILE *f, char *filename, int pcmformat) {
   i64 wavsize, datasize;
   u8 *p, *wavend, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
@@ -86,17 +87,18 @@ void putwav(FILE *f, char *filename) {
   data = p + 8;
   datasize = getle(p + 4, 4);
   wordsize = (8 * fmt.blockalign) / fmt.channels;
-  assert(wordsize >= 8);
+  if (wordsize != 16)
+    errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
   putname(voice->name, filename);
   voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & ~0xff;
   voice->loopstart = voice->loopend = voice->pcmstart;
-  voice->pcmformat = wordsize > 8;
+  voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      u64 word = getle(p, fmt.blockalign) >> (wordsize - 12);
+      u16 word = getle(p, fmt.blockalign) >> (wordsize - 12);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
@@ -110,10 +112,14 @@ void putwav(FILE *f, char *filename) {
     }
     voice->pcmend = q - rom.data;
   } else { /* store 8-bit sample */
-    if (datasize > sizeof(rom.data) - voice->pcmstart)
-      errx(-1, NOSPACE);
-    memmove(rom.data + voice->pcmstart, data, datasize);
-    voice->pcmend = voice->pcmstart + datasize;
+    u8 *q = rom.data + voice->pcmstart;
+    for (p = data; p < data + datasize; p += fmt.blockalign) {
+      u8 word = getle(p, fmt.blockalign) >> (wordsize - 8);
+      if (q >= rom.data + sizeof(rom.data))
+        errx(-1, NOSPACE);
+      *q++ = word;
+    }
+    voice->pcmend = q - rom.data;
   }
 }
 char *matchfield(char *s, char *field) {
@@ -144,12 +150,13 @@ int main(void) {
       if (x < 0 || x > 255)
         errx(-1, "invalid romid: %d", x);
       romid = x;
-    } else if (s = matchfield(line, "file"), s) {
+    } else if ((s = matchfield(line, "file8")) ||
+               (s = matchfield(line, "file12"))) {
       FILE *f = fopen(s, "rb");
       if (!f)
         err(-1, "%s", s);
       warnx("adding %s", s);
-      putwav(f, s);
+      putwav(f, s, s[-2] == '2');
       pcmstart = 0;
       fclose(f);
     } else if (s = matchfield(line, fNAME), s) {

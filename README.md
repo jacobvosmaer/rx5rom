@@ -28,7 +28,7 @@ cat WRC01A.rx5bank WRC01B.rx5bank WRC02A.rx5bank WRC02A.rx5bank | rx5-program 0 
 
 ## Building ROM images
 
-The ROM builder `rx5-build` reads a ROM description from standard input and writes the resulting 128KB ROM image to stdout. A description consists of an optional `romid` followed by one or more file sections, which start with `file /path/to/some-file.wav`. The path to the wav file may not contain a newline character. Optionally, you can set one of the following parameters on the current file:
+The ROM builder `rx5-build` reads a ROM description from standard input and writes the resulting 128KB ROM image to stdout. A description consists of an optional `romid` followed by one or more file sections, which start with `file12 /path/to/some-file.wav` (or `file8` if you want to store the audio as 8-bit PCM). The path to the wav file may not contain a newline character. Optionally, you can set one of the following parameters on the current file:
 
 - octave
 - note
@@ -55,14 +55,14 @@ Syntax example:
 
 ```
 # Add kick.wav with custom envelope settings and name
-file kick.wav
+file12 kick.wav
 name Kick!!
 decay1rate 50
 decay1level 0
 # Add rim.wav with default settings
-file rim.wav
+file12 rim.wav
 # Add snare.wave with custom level
-file snare.wav
+file12 snare.wav
 level 30
 ```
 
@@ -71,12 +71,14 @@ level 30
 Assemble all wav files in the current directory into a ROM image:
 
 ```
-ls *.wav | sed 's/^/file /' | rx5-build > rom.bin
+ls *.wav | sed 's/^/file12 /' | rx5-build > rom.bin
 ```
 
 ### Bugs
 
 Some samples play back incorrectly when using the "reverse" mode on the RX5. Others reverse just fine.
+
+The rx5-build utility only supports 16-bit WAV files.
 
 ## Credits
 
