@@ -7,6 +7,7 @@ struct rx5voice {
   uint8_t ar, d1r, rr, d2r, d1l, gt;
   uint8_t bendrate, bendrange, unknown, level, channel;
 };
+void printvoice(struct rx5voice *v, FILE *f);
 struct rx5rom {
   struct rx5voice voice[256];
   int nvoice;

@@ -91,7 +91,11 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
   putname(voice->name, filename);
-  voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & ~0xff;
+  voice->pcmstart = firstvoice
+                        ? 0x400
+                        : ((voice - 1)->pcmend + 1 +
+                           2 * (((voice - 1)->pcmend & 0x100000) > 0) + 0xff) &
+                              0x1ff00;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
@@ -110,7 +114,11 @@ void putwav(FILE *f, char *filename, int pcmformat) {
         q += 1;
       }
     }
-    voice->pcmend = q - rom.data;
+    voice->pcmend = q - (rom.data + 1) - 3;
+    if ((datasize / fmt.blockalign) & 1) { /* odd number of words */
+    } else {                               /* even number of words */
+      voice->pcmend |= 0x100000;
+    }
   } else { /* store 8-bit sample */
     u8 *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
@@ -119,8 +127,10 @@ void putwav(FILE *f, char *filename, int pcmformat) {
         errx(-1, NOSPACE);
       *q++ = word;
     }
-    voice->pcmend = q - rom.data;
+    voice->pcmend = q - rom.data - 1;
   }
+  if (0)
+    warnx("pcmstart=%d pcmend=%d", voice->pcmstart, voice->pcmend);
 }
 char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
@@ -128,7 +138,7 @@ char *matchfield(char *s, char *field) {
 }
 i32 readaddr(char *s) {
   int x = atoi(s);
-  if (x < 0 || x > sizeof(rom.data))
+  if (x < 0 || (x & 0x1ffff) > sizeof(rom.data))
     errx(-1, "invalid %s address: %d", s, x);
   return x;
 }
@@ -141,7 +151,7 @@ int main(void) {
     if (!eol)
       errx(-1, "missing newline in input");
     *eol = 0;
-    if (*line == '#')
+    if (*line == '#' || matchfield(line, "pcmend"))
       continue;
     if (s = matchfield(line, "romid"), s) {
       int x = atoi(s);
@@ -166,7 +176,8 @@ int main(void) {
     } else if (s = matchfield(line, fPCMSTART), s) {
       pcmstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPSTART), s) {
-      v->loopstart = v->pcmstart + (readaddr(s) - pcmstart);
+      i32 addr = readaddr(s);
+      v->loopstart = v->pcmstart + (addr - pcmstart);
     } else if (s = matchfield(line, fLOOPEND), s) {
       v->loopend = v->pcmstart + (readaddr(s) - pcmstart);
     } else {

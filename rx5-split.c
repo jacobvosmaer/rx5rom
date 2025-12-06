@@ -5,12 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#define assert(x)                                                              \
+  if (!(x))                                                                    \
+  __builtin_trap()
 void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f);
 struct rx5rom rom;
 uint16_t pcmdata[128 * 1024];
 int main(int argc, char **argv) {
   struct rx5voice *v;
-  FILE *f;
+  FILE *f, *txt;
   if (argc != 3)
     errx(-1, "Usage: rx5-split FILE DIR");
   if (f = fopen(argv[1], "rb"), !f)
@@ -19,11 +22,20 @@ int main(int argc, char **argv) {
   fclose(f);
   if (chdir(argv[2]))
     err(-1, "chdir %s", argv[2]);
+  if (txt = fopen("rom.txt", "wb"), !txt)
+    err(-1, "open rom.txt");
+  fprintf(txt, "romid %d\n", rom.data[4]);
   for (v = rom.voice; v < rom.voice + rom.nvoice; v++) {
     uint8_t filename[11] = "123456.wav", *p, *pcmstart = rom.data + v->pcmstart,
-            *pcmend = rom.data + v->pcmend;
+            *pcmend = rom.data + (v->pcmend & 0x1ffff) + 1;
     uint16_t *q = pcmdata;
     if (v->pcmformat) {
+      if (v->pcmend & 0x100000)
+        pcmend += 2;
+      if (0)
+        warnx("pcmstart=%d pcmend=%ld", v->pcmstart, pcmend - rom.data);
+      if (pcmend > rom.data + sizeof(rom.data))
+        errx(-1, "invalid pcmend: %d", v->pcmend);
       for (p = pcmstart + 2; p < pcmend; p++, q++) {
         if ((q - pcmdata) & 1) {
           *q = (p[0] << 8) | (p[-2] & 0xf0);
@@ -32,7 +44,10 @@ int main(int argc, char **argv) {
           *q = (p[0] << 8) | ((p[-1] & 0x0f) << 4);
         }
       }
+
     } else {
+      if (pcmend > rom.data + sizeof(rom.data))
+        errx(-1, "invalid pcmend: %d", v->pcmend);
       for (p = pcmstart; p < pcmend; p++, q++)
         *q = *p << 8;
     }
@@ -43,7 +58,13 @@ int main(int argc, char **argv) {
     if (f = fopen((const char *)filename, "wb"), !f)
       err(-1, "open %s", filename);
     writewav(pcmdata, q - pcmdata, 25000, f);
-    fclose(f);
+    if (fclose(f))
+      err(-1, "close %s", filename);
+    if (fprintf(txt, "###\nfile%d %s\n", v->pcmformat ? 12 : 8, filename) < 0)
+      err(-1, "write rom.txt");
+    printvoice(v, txt);
   }
+  if (fclose(txt))
+    err(-1, "close rom.txt");
   return 0;
 }
