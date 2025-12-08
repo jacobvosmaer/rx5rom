@@ -88,11 +88,11 @@ void loadrom(struct rx5rom *rom, FILE *f) {
   for (i = 0; i < rom->nvoice; i++)
     loadvoice(rom->voice + i, rom->data + 6 + i * 32);
 }
-uint16_t checksum(struct rx5rom *rom, int n) {
+uint16_t checksum(uint8_t *data, int n) {
   uint16_t sum = 0;
   int i;
   for (i = 0; i < n; i++)
-    sum += rom->data[i];
+    sum += data[i];
   return sum;
 }
 void storevoices(struct rx5rom *rom, int id) {
@@ -100,10 +100,15 @@ void storevoices(struct rx5rom *rom, int id) {
   rom->data[5] = rom->nvoice;
   for (i = 0; i < rom->nvoice; i++)
     putvoice(rom->voice + i, rom->data + 6 + i * 32);
-  sum = checksum(rom, 1022);
+  sum = checksum(rom->data, 1022);
   rom->data[4] = id < 0 ? (sum & 0xff) ^ (sum >> 8) : id;
   /* re-calculate checksum because ROM ID may have changed it */
-  sum = checksum(rom, 1022);
+  sum = checksum(rom->data, 1022);
   rom->data[1022] = sum >> 8;
   rom->data[1023] = sum;
+  /* another checksum, not sure if the RX5 actually reads it but the original
+   * cartridges have it */
+  sum = checksum(rom->data, sizeof(rom->data) - 2);
+  rom->data[sizeof(rom->data) - 2] = sum >> 8;
+  rom->data[sizeof(rom->data) - 1] = sum;
 }
