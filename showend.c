@@ -20,8 +20,7 @@ int main(int argc, char **argv) {
            (pcmend - v->pcmstart - 1) / 3.0, v->pcmend & 0x100000 ? '*' : ' ');
     for (i = pcmend - 4; i < pcmend + 6; i++)
       if (i < sizeof(rom.data))
-        printf(" %s%02x", ((i - (v->pcmstart + 1)) % 3) ? " " : ".",
-               rom.data[i]);
+        printf(" %s%02x", ((i - (v->pcmstart)) % 3) ? " " : ".", rom.data[i]);
     putchar('\n');
   }
   return 0;

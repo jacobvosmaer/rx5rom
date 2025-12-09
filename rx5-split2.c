@@ -14,18 +14,20 @@ uint16_t pcmdata[128 * 1024];
 int32_t convertaddr(struct rx5voice *v, int32_t addr) {
   addr &= 0x1ffff;
   assert(addr >= v->pcmstart);
-  switch ((addr - v->pcmstart) % 3) {
-  case 0:
-    addr += 2;
-    break;
-  case 1:
-    addr += 1;
-    break;
-  case 2:
-    addr += 2;
-    break;
+  if (((addr - v->pcmstart) % 3) == 2)
+    errx(-1, "unexpected modulus");
+  return addr + 2;
+}
+int convertword12(uint8_t *start, uint8_t *p, uint16_t *dest) {
+  int ret = 1;
+  assert(p > start);
+  if ((p - start) % 3) {
+    *dest = (p[0] << 8) | ((p[-1] & 0x0f) << 4);
+  } else {
+    *dest = (p[0] << 8) | (p[-2] & 0xf0);
+    ret++;
   }
-  return addr;
+  return ret;
 }
 int main(int argc, char **argv) {
   struct rx5voice *v;
@@ -50,14 +52,9 @@ int main(int argc, char **argv) {
       warnx("start=%06lx", pcmend - rom.data);
       if (pcmend > rom.data + sizeof(rom.data))
         errx(-1, "invalid pcmend: %d", v->pcmend);
-      for (p = rom.data + convertaddr(v, v->pcmstart); p < pcmend; p++, q++) {
-        if ((q - pcmdata) & 1) {
-          *q = (p[0] << 8) | (p[-2] & 0xf0);
-          p++;
-        } else {
-          *q = (p[0] << 8) | ((p[-1] & 0x0f) << 4);
-        }
-      }
+      p = rom.data + convertaddr(v, v->pcmstart);
+      while (p < pcmend)
+        p += convertword12(rom.data + v->pcmstart, p, q++);
     } else {
       if (pcmend > rom.data + sizeof(rom.data))
         errx(-1, "invalid pcmend: %d", v->pcmend);
