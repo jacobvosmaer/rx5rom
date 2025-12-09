@@ -44,17 +44,19 @@ int main(int argc, char **argv) {
     err(-1, "open rom.txt");
   fprintf(txt, "romid %d\n", rom.data[4]);
   for (v = rom.voice; v < rom.voice + rom.nvoice; v++) {
+    int i;
     uint8_t filename[11] = "123456.wav", *p, *pcmstart = rom.data + v->pcmstart,
             *pcmend = rom.data + (v->pcmend & 0x1ffff) + 1;
     uint16_t *q = pcmdata;
     if (v->pcmformat) {
-      pcmend = rom.data + convertaddr(v, v->pcmend);
-      warnx("start=%06lx", pcmend - rom.data);
+      pcmend = rom.data + convertaddr(v, v->loopend) - 2;
       if (pcmend > rom.data + sizeof(rom.data))
         errx(-1, "invalid pcmend: %d", v->pcmend);
-      p = rom.data + convertaddr(v, v->pcmstart);
-      while (p < pcmend)
+      for (p = rom.data + convertaddr(v, v->pcmstart); p < pcmend;)
         p += convertword12(rom.data + v->pcmstart, p, q++);
+      for (i = 0; i < 3; i++)
+        for (p = rom.data + convertaddr(v, v->loopstart); p < pcmend;)
+          p += convertword12(rom.data + v->pcmstart, p, q++);
     } else {
       if (pcmend > rom.data + sizeof(rom.data))
         errx(-1, "invalid pcmend: %d", v->pcmend);
