@@ -91,11 +91,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
   putname(voice->name, filename);
-  voice->pcmstart = firstvoice
-                        ? 0x400
-                        : ((voice - 1)->pcmend + 1 +
-                           2 * (((voice - 1)->pcmend & 0x100000) > 0) + 0xff) &
-                              0x1ff00;
+  voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & 0x1ff00;
   voice->loopstart = voice->loopend = voice->pcmstart;
   voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
@@ -114,13 +110,9 @@ void putwav(FILE *f, char *filename, int pcmformat) {
         q += 1;
       }
     }
-    voice->pcmend = q - rom.data - 4;
-    while ((voice->pcmend - voice->pcmstart - 1) % 3)
-      voice->pcmend++;
-    if ((datasize / fmt.blockalign) & 1) { /* odd number of words */
-    } else {                               /* even number of words */
-      voice->pcmend |= 0x100000;
-    }
+    voice->pcmend = q - rom.data;
+    if (((voice->pcmend - (voice->pcmstart + 1)) % 3) == 1)
+      voice->pcmend = 0x100000 | (voice->pcmend - 1);
   } else { /* store 8-bit sample */
     u8 *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
@@ -129,10 +121,8 @@ void putwav(FILE *f, char *filename, int pcmformat) {
         errx(-1, NOSPACE);
       *q++ = word;
     }
-    voice->pcmend = q - rom.data - 1;
+    voice->pcmend = q - rom.data;
   }
-  if (0)
-    warnx("pcmstart=%d pcmend=%d", voice->pcmstart, voice->pcmend);
 }
 char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
@@ -223,7 +213,7 @@ int main(void) {
   storevoices(&rom, romid);
   warnx("PCM data space left: %lu bytes",
         (sizeof(rom.data) -
-         (rom.nvoice ? rom.voice[rom.nvoice - 1].pcmend : 0x400)) &
+         (rom.nvoice ? rom.voice[rom.nvoice - 1].pcmend & 0x1ffff : 0x400)) &
             ~0xff);
   return !fwrite(rom.data, sizeof(rom.data), 1, stdout);
 }
