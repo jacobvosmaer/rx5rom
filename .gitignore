@@ -6,3 +6,7 @@ tmp
 rom
 rx5-program
 rx5-build
+rx5-split2
+showend
+sum
+*.wav

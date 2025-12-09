@@ -11,11 +11,27 @@
 void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f);
 struct rx5rom rom;
 uint16_t pcmdata[128 * 1024];
+int32_t convertaddr(struct rx5voice *v, int32_t addr) {
+  addr &= 0x1ffff;
+  assert(addr >= v->pcmstart);
+  switch ((addr - v->pcmstart) % 3) {
+  case 0:
+    addr += 2;
+    break;
+  case 1:
+    addr += 1;
+    break;
+  case 2:
+    addr += 2;
+    break;
+  }
+  return addr;
+}
 int main(int argc, char **argv) {
   struct rx5voice *v;
   FILE *f, *txt;
   if (argc != 3)
-    errx(-1, "Usage: rx5-split FILE DIR");
+    errx(-1, "Usage: rx5-split2 FILE DIR");
   if (f = fopen(argv[1], "rb"), !f)
     err(-1, "open %s", argv[1]);
   loadrom(&rom, f);
@@ -30,12 +46,11 @@ int main(int argc, char **argv) {
             *pcmend = rom.data + (v->pcmend & 0x1ffff) + 1;
     uint16_t *q = pcmdata;
     if (v->pcmformat) {
-      pcmend += 2;
-      if (0)
-        warnx("pcmstart=%d pcmend=%ld", v->pcmstart, pcmend - rom.data);
+      pcmend = rom.data + convertaddr(v, v->pcmend);
+      warnx("start=%06lx", pcmend - rom.data);
       if (pcmend > rom.data + sizeof(rom.data))
         errx(-1, "invalid pcmend: %d", v->pcmend);
-      for (p = pcmstart + 2; p < pcmend; p++, q++) {
+      for (p = rom.data + convertaddr(v, v->pcmstart); p < pcmend; p++, q++) {
         if ((q - pcmdata) & 1) {
           *q = (p[0] << 8) | (p[-2] & 0xf0);
           p++;
@@ -43,7 +58,6 @@ int main(int argc, char **argv) {
           *q = (p[0] << 8) | ((p[-1] & 0x0f) << 4);
         }
       }
-
     } else {
       if (pcmend > rom.data + sizeof(rom.data))
         errx(-1, "invalid pcmend: %d", v->pcmend);

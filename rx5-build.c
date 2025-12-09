@@ -114,7 +114,9 @@ void putwav(FILE *f, char *filename, int pcmformat) {
         q += 1;
       }
     }
-    voice->pcmend = q - (rom.data + 1) - 3;
+    voice->pcmend = q - rom.data - 4;
+    while ((voice->pcmend - voice->pcmstart - 1) % 3)
+      voice->pcmend++;
     if ((datasize / fmt.blockalign) & 1) { /* odd number of words */
     } else {                               /* even number of words */
       voice->pcmend |= 0x100000;
