@@ -111,8 +111,10 @@ void putwav(FILE *f, char *filename, int pcmformat) {
       }
     }
     voice->pcmend = q - rom.data;
-    if (((voice->pcmend - (voice->pcmstart + 1)) % 3) == 1)
+    if (((voice->pcmend - (voice->pcmstart + 1)) % 3) == 1) {
+      /* pcmend points at even word */
       voice->pcmend = 0x100000 | (voice->pcmend - 1);
+    }
   } else { /* store 8-bit sample */
     u8 *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
