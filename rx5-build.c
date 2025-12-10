@@ -92,7 +92,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   *voice = defaultvoice;
   putname(voice->name, filename);
   voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & 0x1ff00;
-  voice->loopstart = voice->loopend = voice->pcmstart;
+  voice->loopstart = voice->pcmstart;
   voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
   if (voice->pcmformat) { /* store 12-bit sample */
@@ -123,6 +123,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     }
     voice->pcmend = q - rom.data;
   }
+  voice->loopend = voice->pcmend;
 }
 char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
