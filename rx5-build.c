@@ -91,7 +91,11 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
   putname(voice->name, filename);
-  voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & 0x1ff00;
+  /* Round starting point up from last sample and ensure there is some empty
+   * space. If we do not end the new sample starts right after the previous one
+   * the previous one gets a click at the end. */
+  voice->pcmstart =
+      firstvoice ? 0x400 : ((voice - 1)->pcmend + 0x103) & 0x1ff00;
   voice->loopstart = voice->pcmstart;
   voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
