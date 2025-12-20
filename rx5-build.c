@@ -44,7 +44,7 @@ void putname(char *dst, char *s) {
 }
 #define NOSPACE "not enough space in ROM for sample"
 void putwav(FILE *f, char *filename, int pcmformat) {
-  uint64_t wavsize, datasize;
+  int64_t wavsize, datasize;
   uint8_t *p, *wavend, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
                   defaultvoice = {"      ", 2,  120, 0,  0,  0, 0, 0,  0,  99,
@@ -129,7 +129,7 @@ char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
   return strstr(s, field) == s && *tail == ' ' ? tail + 1 : 0;
 }
-uint32_t readaddr(char *s) {
+int32_t readaddr(char *s) {
   int x = atoi(s);
   if (x < 0 || (x & 0x1ffff) > sizeof(rom.data))
     errx(-1, "invalid %s address: %d", s, x);
@@ -137,7 +137,7 @@ uint32_t readaddr(char *s) {
 }
 char line[1024];
 int main(void) {
-  uint32_t pcmstart, romid = -1;
+  int32_t pcmstart, romid = -1;
   while (fgets(line, sizeof(line), stdin)) {
     struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
@@ -169,7 +169,7 @@ int main(void) {
     } else if (s = matchfield(line, fPCMSTART), s) {
       pcmstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPSTART), s) {
-      uint32_t addr = readaddr(s);
+      int32_t addr = readaddr(s);
       v->loopstart = v->pcmstart + (addr - pcmstart);
     } else if (s = matchfield(line, fLOOPEND), s) {
       v->loopend = v->pcmstart + (readaddr(s) - pcmstart);
