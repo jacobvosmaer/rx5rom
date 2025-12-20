@@ -51,6 +51,8 @@ All parameters use the native numerical format of the ROM dumps. For example, `c
 
 By default, the voice name is the first 6 characters of the filename. You can override this by adding a `name` statement.
 
+The `copy` keyword will copy the last entered voice. This allows you to have multiple voices that play back the same PCM audio data.
+
 Syntax example:
 
 ```

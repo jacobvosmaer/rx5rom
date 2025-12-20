@@ -14,6 +14,7 @@
 #define assert(x)                                                              \
   if (!(x))                                                                    \
   __builtin_trap()
+#define NCHAN 12
 struct rx5rom rom;
 uint8_t wav[(sizeof(rom.data) * 2) / 3 * 4];
 int nvoices;
@@ -92,7 +93,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
       firstvoice ? 0x400 : ((voice - 1)->pcmend + 0x103) & 0x1ff00;
   voice->loopstart = voice->pcmstart;
   voice->pcmformat = pcmformat;
-  voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
+  voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % NCHAN;
   if (voice->pcmformat) { /* store 12-bit sample */
     uint8_t *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
@@ -147,6 +148,8 @@ int main(void) {
     if (*line == '#' || matchfield(line, fPCMSTART) ||
         matchfield(line, fPCMEND))
       continue;
+    if (rom.nvoice >= nelem(rom.voice))
+      errx(-1, "too many voice entries");
     if (s = matchfield(line, "romid"), s) {
       int x = atoi(s);
       if (rom.nvoice)
@@ -162,6 +165,13 @@ int main(void) {
       warnx("adding %s", s);
       putwav(f, s, s[-2] == '2');
       fclose(f);
+    } else if (!strcmp(line, "copy")) {
+      if (!rom.nvoice)
+        errx(-1, "copy before file statement");
+      warnx("copying last voice");
+      v = rom.voice + rom.nvoice++;
+      *v = *(v - 1);
+      v->channel = ((v - 1)->channel + 1) % NCHAN;
     } else if (s = matchfield(line, fNAME), s) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
