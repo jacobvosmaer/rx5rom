@@ -137,14 +137,15 @@ int32_t readaddr(char *s) {
 }
 char line[1024];
 int main(void) {
-  int32_t pcmstart, romid = -1;
+  int32_t romid = -1;
   while (fgets(line, sizeof(line), stdin)) {
     struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
     if (!eol)
       errx(-1, "missing newline in input");
     *eol = 0;
-    if (*line == '#' || matchfield(line, "pcmend"))
+    if (*line == '#' || matchfield(line, fPCMSTART) ||
+        matchfield(line, fPCMEND))
       continue;
     if (s = matchfield(line, "romid"), s) {
       int x = atoi(s);
@@ -160,19 +161,15 @@ int main(void) {
         err(-1, "%s", s);
       warnx("adding %s", s);
       putwav(f, s, s[-2] == '2');
-      pcmstart = 0;
       fclose(f);
     } else if (s = matchfield(line, fNAME), s) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
       putname(v->name, s);
-    } else if (s = matchfield(line, fPCMSTART), s) {
-      pcmstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPSTART), s) {
-      int32_t addr = readaddr(s);
-      v->loopstart = v->pcmstart + (addr - pcmstart);
+      v->loopstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPEND), s) {
-      v->loopend = v->pcmstart + (readaddr(s) - pcmstart);
+      v->loopend = readaddr(s);
     } else {
       struct {
         ptrdiff_t offset;
