@@ -1,9 +1,0 @@
-#!/bin/sh
-hexdump -C "$1"|awk '
-NR<32 && NR%2==1 && ($11!="00" || $12!="00") {
-  if(length(re)>0) re = re "|"
-  re = "" re "00" $11 $12 "00"
-}
-NR>=32 && $1 ~ re
-END { print "re=" re }
-'
