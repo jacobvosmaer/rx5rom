@@ -76,8 +76,6 @@ ls *.wav | sed 's/^/file12 /' | rx5-build > rom.bin
 
 ### Bugs
 
-Some samples play back incorrectly when using the "reverse" mode on the RX5. Others reverse just fine.
-
 The rx5-build utility only supports 16-bit WAV files.
 
 ## Credits
