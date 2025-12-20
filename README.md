@@ -78,6 +78,8 @@ ls *.wav | sed 's/^/file12 /' | rx5-build > rom.bin
 
 The rx5-build utility only supports 16-bit WAV files.
 
+The loopstart and loopend fields don't work correctly in rx5-build. You can however loop the entire sample by writing `loop 1`.
+
 ## Credits
 
 Parsing of ROM data is based on in [gligli/rx5usb](https://github.com/gligli/rx5usb).
