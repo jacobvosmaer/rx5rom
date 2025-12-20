@@ -15,6 +15,7 @@
   if (!(x))                                                                    \
   __builtin_trap()
 typedef uint8_t u8;
+typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef int32_t i32;
@@ -48,7 +49,7 @@ void putname(char *dst, char *s) {
   *p = 0;
 }
 #define NOSPACE "not enough space in ROM for sample"
-void putwav(FILE *f, char *filename) {
+void putwav(FILE *f, char *filename, int pcmformat) {
   i64 wavsize, datasize;
   u8 *p, *wavend, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
@@ -86,17 +87,22 @@ void putwav(FILE *f, char *filename) {
   data = p + 8;
   datasize = getle(p + 4, 4);
   wordsize = (8 * fmt.blockalign) / fmt.channels;
-  assert(wordsize >= 8);
+  if (wordsize != 16)
+    errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
   putname(voice->name, filename);
-  voice->pcmstart = firstvoice ? 0x400 : ((voice - 1)->pcmend + 0xff) & ~0xff;
-  voice->loopstart = voice->loopend = voice->pcmstart;
-  voice->pcmformat = wordsize > 8;
+  /* Round starting point up from last sample and ensure there is some empty
+   * space. If we do not end the new sample starts right after the previous one
+   * the previous one gets a click at the end. */
+  voice->pcmstart =
+      firstvoice ? 0x400 : ((voice - 1)->pcmend + 0x103) & 0x1ff00;
+  voice->loopstart = voice->pcmstart;
+  voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
   if (voice->pcmformat) { /* store 12-bit sample */
     u8 *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      u64 word = getle(p, fmt.blockalign) >> (wordsize - 12);
+      u16 word = getle(p, fmt.blockalign) >> (wordsize - 12);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
@@ -109,12 +115,21 @@ void putwav(FILE *f, char *filename) {
       }
     }
     voice->pcmend = q - rom.data;
+    if (((voice->pcmend - (voice->pcmstart + 1)) % 3) == 1) {
+      /* pcmend points at even word */
+      voice->pcmend = 0x100000 | (voice->pcmend - 1);
+    }
   } else { /* store 8-bit sample */
-    if (datasize > sizeof(rom.data) - voice->pcmstart)
-      errx(-1, NOSPACE);
-    memmove(rom.data + voice->pcmstart, data, datasize);
-    voice->pcmend = voice->pcmstart + datasize;
+    u8 *q = rom.data + voice->pcmstart;
+    for (p = data; p < data + datasize; p += fmt.blockalign) {
+      u8 word = getle(p, fmt.blockalign) >> (wordsize - 8);
+      if (q >= rom.data + sizeof(rom.data))
+        errx(-1, NOSPACE);
+      *q++ = word;
+    }
+    voice->pcmend = q - rom.data;
   }
+  voice->loopend = voice->pcmend;
 }
 char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
@@ -122,27 +137,35 @@ char *matchfield(char *s, char *field) {
 }
 i32 readaddr(char *s) {
   int x = atoi(s);
-  if (x < 0 || x > sizeof(rom.data))
+  if (x < 0 || (x & 0x1ffff) > sizeof(rom.data))
     errx(-1, "invalid %s address: %d", s, x);
   return x;
 }
 char line[1024];
 int main(void) {
-  i32 pcmstart;
+  i32 pcmstart, romid = -1;
   while (fgets(line, sizeof(line), stdin)) {
     struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
     if (!eol)
       errx(-1, "missing newline in input");
     *eol = 0;
-    if (*line == '#')
+    if (*line == '#' || matchfield(line, "pcmend"))
       continue;
-    if (s = matchfield(line, "file"), s) {
+    if (s = matchfield(line, "romid"), s) {
+      int x = atoi(s);
+      if (rom.nvoice)
+        errx(-1, "romid after file statement");
+      if (x < 0 || x > 255)
+        errx(-1, "invalid romid: %d", x);
+      romid = x;
+    } else if ((s = matchfield(line, "file8")) ||
+               (s = matchfield(line, "file12"))) {
       FILE *f = fopen(s, "rb");
       if (!f)
         err(-1, "%s", s);
       warnx("adding %s", s);
-      putwav(f, s);
+      putwav(f, s, s[-2] == '2');
       pcmstart = 0;
       fclose(f);
     } else if (s = matchfield(line, fNAME), s) {
@@ -152,7 +175,8 @@ int main(void) {
     } else if (s = matchfield(line, fPCMSTART), s) {
       pcmstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPSTART), s) {
-      v->loopstart = v->pcmstart + (readaddr(s) - pcmstart);
+      i32 addr = readaddr(s);
+      v->loopstart = v->pcmstart + (addr - pcmstart);
     } else if (s = matchfield(line, fLOOPEND), s) {
       v->loopend = v->pcmstart + (readaddr(s) - pcmstart);
     } else {
@@ -193,10 +217,10 @@ int main(void) {
         errx(-1, "invalid statement: %s", line);
     }
   }
-  storevoices(&rom);
+  storevoices(&rom, romid);
   warnx("PCM data space left: %lu bytes",
         (sizeof(rom.data) -
-         (rom.nvoice ? rom.voice[rom.nvoice - 1].pcmend : 0x400)) &
+         (rom.nvoice ? rom.voice[rom.nvoice - 1].pcmend & 0x1ffff : 0x400)) &
             ~0xff);
   return !fwrite(rom.data, sizeof(rom.data), 1, stdout);
 }

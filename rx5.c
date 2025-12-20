@@ -3,10 +3,10 @@
 #include <err.h>
 #include <string.h>
 int32_t getaddr(uint8_t *p) {
-  return (((int32_t)p[0] & 1) << 16) | ((int32_t)p[1] << 8) | (int32_t)p[2];
+  return ((int32_t)p[0] << 16) | ((int32_t)p[1] << 8) | (int32_t)p[2];
 }
 void putaddr(uint8_t *p, int32_t x) {
-  p[0] = (x >> 16) & 1;
+  p[0] = x >> 16;
   p[1] = x >> 8;
   p[2] = x;
 }
@@ -16,7 +16,7 @@ void loadvoice(struct rx5voice *v, uint8_t *p) {
   v->note = p[1];
   v->pcmformat = p[2] & 1;
   v->loop = !(p[3] & 0x40);
-  v->pcmstart = getaddr(p + 3) & ~0xff;
+  v->pcmstart = getaddr(p + 3) & 0x1ff00;
   v->loopstart = getaddr(p + 5);
   v->loopend = getaddr(p + 8);
   v->pcmend = getaddr(p + 11);
@@ -57,6 +57,25 @@ void putvoice(struct rx5voice *v, uint8_t *p) {
   p[24] = v->channel;
   memmove(p + 26, v->name, 6);
 }
+void printvoice(struct rx5voice *v, FILE *f) {
+  fprintf(f, fNAME " %6.6s\n", v->name);
+  fprintf(f, fOCTAVE " %d\n", v->octave);
+  fprintf(f, fNOTE " %d\n", v->note);
+  fprintf(f, fLOOP " %d\n", v->loop);
+  fprintf(f, fPCMSTART " %d\n", v->pcmstart);
+  fprintf(f, fLOOPSTART " %d\n", v->loopstart);
+  fprintf(f, fLOOPEND " %d\n", v->loopend);
+  fprintf(f, fPCMEND " %d\n", v->pcmend);
+  fprintf(f,
+          fATTACKRATE " %d\n" fDECAY1RATE " %d\n" fDECAY1LEVEL
+                      " %d\n" fDECAY2RATE " %d\n" fRELEASERATE " %d\n" fGATETIME
+                      " %d\n",
+          v->ar, v->d1r, v->d1l, v->d2r, v->rr, v->gt);
+  fprintf(f, fBENDRATE " %d\n" fBENDRANGE " %d\n", v->bendrate, v->bendrange);
+  fprintf(f, fUNKNOWN " %d\n", v->unknown);
+  fprintf(f, fLEVEL " %d\n", v->level);
+  fprintf(f, fCHANNEL " %d\n", v->channel);
+}
 void loadrom(struct rx5rom *rom, FILE *f) {
   int i;
   if (fread(rom->data, 1, sizeof(rom->data), f) != sizeof(rom->data))
@@ -76,14 +95,14 @@ uint16_t checksum(uint8_t *data, int n) {
     sum += data[i];
   return sum;
 }
-void storevoices(struct rx5rom *rom) {
+void storevoices(struct rx5rom *rom, int id) {
   int i, sum;
   rom->data[5] = rom->nvoice;
   for (i = 0; i < rom->nvoice; i++)
     putvoice(rom->voice + i, rom->data + 6 + i * 32);
   sum = checksum(rom->data, 1022);
-  rom->data[4] = (sum & 0xff) ^ (sum >> 8); /* ROM ID */
-  /* re-calculate checksum because ROM ID changed it */
+  rom->data[4] = id < 0 ? (sum & 0xff) ^ (sum >> 8) : id;
+  /* re-calculate checksum because ROM ID may have changed it */
   sum = checksum(rom->data, 1022);
   rom->data[1022] = sum >> 8;
   rom->data[1023] = sum;
