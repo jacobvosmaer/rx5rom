@@ -43,7 +43,7 @@ The ROM builder `rx5-build` reads a ROM description from standard input and writ
 - gatetime
 - bendrate
 - bendrange
-- unknown
+- reverseattackrate
 - level
 - channel
 

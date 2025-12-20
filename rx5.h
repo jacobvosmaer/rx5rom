@@ -5,7 +5,7 @@ struct rx5voice {
   uint8_t octave, note, pcmformat, loop;
   int32_t pcmstart, pcmend, loopstart, loopend;
   uint8_t ar, d1r, rr, d2r, d1l, gt;
-  uint8_t bendrate, bendrange, unknown, level, channel;
+  uint8_t bendrate, bendrange, reverseattackrate, level, channel;
 };
 void printvoice(struct rx5voice *v, FILE *f);
 struct rx5rom {
@@ -31,6 +31,6 @@ void storevoices(struct rx5rom *rom, int id);
 #define fGATETIME "gatetime"
 #define fBENDRATE "bendrate"
 #define fBENDRANGE "bendrange"
-#define fUNKNOWN "unknown"
+#define fREVERSEATTACKRATE "reverseattackrate"
 #define fLEVEL "level"
 #define fCHANNEL "channel"

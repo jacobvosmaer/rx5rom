@@ -28,7 +28,7 @@ void loadvoice(struct rx5voice *v, uint8_t *p) {
   v->gt = p[19];
   v->bendrate = p[20];
   v->bendrange = p[21];
-  v->unknown = p[22];
+  v->reverseattackrate = p[22];
   v->level = p[23];
   v->channel = p[24];
   memmove(v->name, p + 26, 6);
@@ -52,7 +52,7 @@ void putvoice(struct rx5voice *v, uint8_t *p) {
   p[19] = v->gt;
   p[20] = v->bendrate;
   p[21] = v->bendrange;
-  p[22] = v->unknown;
+  p[22] = v->reverseattackrate;
   p[23] = v->level;
   p[24] = v->channel;
   memmove(p + 26, v->name, 6);
@@ -72,7 +72,7 @@ void printvoice(struct rx5voice *v, FILE *f) {
                       " %d\n",
           v->ar, v->d1r, v->d1l, v->d2r, v->rr, v->gt);
   fprintf(f, fBENDRATE " %d\n" fBENDRANGE " %d\n", v->bendrate, v->bendrange);
-  fprintf(f, fUNKNOWN " %d\n", v->unknown);
+  fprintf(f, fREVERSEATTACKRATE " %d\n", v->reverseattackrate);
   fprintf(f, fLEVEL " %d\n", v->level);
   fprintf(f, fCHANNEL " %d\n", v->channel);
 }
