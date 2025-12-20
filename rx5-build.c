@@ -14,31 +14,25 @@
 #define assert(x)                                                              \
   if (!(x))                                                                    \
   __builtin_trap()
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef int32_t i32;
-typedef int64_t i64;
 struct rx5rom rom;
-u8 wav[(sizeof(rom.data) * 2) / 3 * 4];
+uint8_t wav[(sizeof(rom.data) * 2) / 3 * 4];
 int nvoices;
-u64 getle(u8 *p, int size) {
-  u64 x = 0;
+uint64_t getle(uint8_t *p, int size) {
+  uint64_t x = 0;
   while (size--)
     x = (x << 8) | p[size];
   return x;
 }
 #define CHUNK_HEADER 8
-u8 *findchunk(char *ID, u8 *start, u8 *end) {
-  u8 *p = start;
+uint8_t *findchunk(char *ID, uint8_t *start, uint8_t *end) {
+  uint8_t *p = start;
   while (p < end - CHUNK_HEADER) {
-    u32 size = getle(p + 4, 4);
+    uint32_t size = getle(p + 4, 4);
     if (size > end - (p + CHUNK_HEADER))
       errx(-1, "chunk %4.4s: invalid size %d", p, size);
     if (!memcmp(p, ID, 4))
       return p;
-    p += CHUNK_HEADER + (u64)size + (size & 1);
+    p += CHUNK_HEADER + (uint64_t)size + (size & 1);
   }
   return end;
 }
@@ -50,13 +44,13 @@ void putname(char *dst, char *s) {
 }
 #define NOSPACE "not enough space in ROM for sample"
 void putwav(FILE *f, char *filename, int pcmformat) {
-  i64 wavsize, datasize;
-  u8 *p, *wavend, *data;
+  uint64_t wavsize, datasize;
+  uint8_t *p, *wavend, *data;
   struct rx5voice *voice = rom.voice + rom.nvoice++,
                   defaultvoice = {"      ", 2,  120, 0,  0,  0, 0, 0,  0,  99,
                                   2,        60, 99,  59, 92, 0, 0, 99, 27, 0};
   struct wavfmt fmt;
-  u64 x;
+  uint64_t x;
   int wordsize, firstvoice = voice == rom.voice;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
     errx(-1, "WAV file too big");
@@ -100,9 +94,9 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   voice->pcmformat = pcmformat;
   voice->channel = firstvoice ? 0 : ((voice - 1)->channel + 1) % 12;
   if (voice->pcmformat) { /* store 12-bit sample */
-    u8 *q = rom.data + voice->pcmstart + 2;
+    uint8_t *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      u16 word = getle(p, fmt.blockalign) >> (wordsize - 12);
+      uint16_t word = getle(p, fmt.blockalign) >> (wordsize - 12);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
@@ -120,9 +114,9 @@ void putwav(FILE *f, char *filename, int pcmformat) {
       voice->pcmend = 0x100000 | (voice->pcmend - 1);
     }
   } else { /* store 8-bit sample */
-    u8 *q = rom.data + voice->pcmstart;
+    uint8_t *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      u8 word = getle(p, fmt.blockalign) >> (wordsize - 8);
+      uint8_t word = getle(p, fmt.blockalign) >> (wordsize - 8);
       if (q >= rom.data + sizeof(rom.data))
         errx(-1, NOSPACE);
       *q++ = word;
@@ -135,7 +129,7 @@ char *matchfield(char *s, char *field) {
   char *tail = s + strlen(field);
   return strstr(s, field) == s && *tail == ' ' ? tail + 1 : 0;
 }
-i32 readaddr(char *s) {
+uint32_t readaddr(char *s) {
   int x = atoi(s);
   if (x < 0 || (x & 0x1ffff) > sizeof(rom.data))
     errx(-1, "invalid %s address: %d", s, x);
@@ -143,7 +137,7 @@ i32 readaddr(char *s) {
 }
 char line[1024];
 int main(void) {
-  i32 pcmstart, romid = -1;
+  uint32_t pcmstart, romid = -1;
   while (fgets(line, sizeof(line), stdin)) {
     struct rx5voice *v = rom.voice + rom.nvoice - 1;
     char *s, *eol = strchr(line, '\n');
@@ -175,7 +169,7 @@ int main(void) {
     } else if (s = matchfield(line, fPCMSTART), s) {
       pcmstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPSTART), s) {
-      i32 addr = readaddr(s);
+      uint32_t addr = readaddr(s);
       v->loopstart = v->pcmstart + (addr - pcmstart);
     } else if (s = matchfield(line, fLOOPEND), s) {
       v->loopend = v->pcmstart + (readaddr(s) - pcmstart);
@@ -209,7 +203,7 @@ int main(void) {
             errx(-1, "%s before file statement", pp->field);
           if (x < pp->min || x > pp->max)
             errx(-1, "%s out of range: %s", pp->field, s);
-          ((u8 *)v)[pp->offset] = x;
+          ((uint8_t *)v)[pp->offset] = x;
           break;
         }
       }

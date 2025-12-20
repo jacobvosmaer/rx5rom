@@ -6,8 +6,7 @@
 #include <string.h>
 #define BANKSIZE (128 * 1024)
 #define MSGSIZE 64
-typedef hid_device usbdev;
-usbdev *usbopen(void) {
+hid_device *usbopen(void) {
   struct hid_device_info *devinfo;
   for (devinfo = hid_enumerate(0x6112, 0x5550); devinfo;
        devinfo = devinfo->next)
@@ -15,13 +14,13 @@ usbdev *usbopen(void) {
       return hid_open_path(devinfo->path);
   return 0;
 }
-void usbclose(usbdev *dev) { hid_close(dev); }
-int usbwrite(usbdev *dev, uint8_t *msg) {
+void usbclose(hid_device *dev) { hid_close(dev); }
+int usbwrite(hid_device *dev, uint8_t *msg) {
   uint8_t buf[MSGSIZE + 1] = {0};
   memmove(buf + 1, msg, MSGSIZE);
   return hid_write(dev, buf, sizeof(buf)) != sizeof(buf);
 }
-int usbread(usbdev *dev, uint8_t *msg) {
+int usbread(hid_device *dev, uint8_t *msg) {
   return hid_read(dev, msg, MSGSIZE) != MSGSIZE;
 }
 uint8_t request[MSGSIZE], response[MSGSIZE];
@@ -31,7 +30,7 @@ void putle(uint8_t *p, uint64_t x, int n) {
 }
 int main(int argc, char **argv) {
   int i;
-  usbdev *dev;
+  hid_device *dev;
   uint32_t address, size;
   if (argc != 3 || strlen(argv[1]) != 1 || strlen(argv[2]) != 1)
     errx(-1, "usage: rx5-program FIRST_SLOT NUM_BANKS");
