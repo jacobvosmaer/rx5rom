@@ -66,12 +66,14 @@ void printvoice(struct rx5voice *v, FILE *f) {
   fprintf(f, fLOOPSTART " %d\n", v->loopstart);
   fprintf(f, fLOOPEND " %d\n", v->loopend);
   fprintf(f, fPCMEND " %d\n", v->pcmend);
-  fprintf(f,
-          fATTACKRATE " %d\n" fDECAY1RATE " %d\n" fDECAY1LEVEL
-                      " %d\n" fDECAY2RATE " %d\n" fRELEASERATE " %d\n" fGATETIME
-                      " %d\n",
-          v->ar, v->d1r, v->d1l, v->d2r, v->rr, v->gt);
-  fprintf(f, fBENDRATE " %d\n" fBENDRANGE " %d\n", v->bendrate, v->bendrange);
+  fprintf(f, fATTACKRATE " %d\n", v->ar);
+  fprintf(f, fDECAY1RATE " %d\n", v->d1r);
+  fprintf(f, fDECAY1LEVEL " %d\n", v->d1l);
+  fprintf(f, fDECAY2RATE " %d\n", v->d2r);
+  fprintf(f, fRELEASERATE " %d\n", v->rr);
+  fprintf(f, fGATETIME " %d\n", v->gt);
+  fprintf(f, fBENDRATE " %d\n", v->bendrate);
+  fprintf(f, fBENDRANGE " %d\n", v->bendrange);
   fprintf(f, fREVERSEATTACKRATE " %d\n", v->reverseattackrate);
   fprintf(f, fLEVEL " %d\n", v->level);
   fprintf(f, fCHANNEL " %d\n", v->channel);
