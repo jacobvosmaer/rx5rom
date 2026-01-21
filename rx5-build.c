@@ -11,6 +11,7 @@
 #define offsetof(t, f) (size_t)((char *)&((t *)0)->f - (char *)0)
 #endif
 #define nelem(x) (sizeof(x) / sizeof(*(x)))
+#define endof(x) (x + nelem(x))
 #define assert(x)                                                              \
   if (!(x))                                                                    \
   __builtin_trap()
@@ -37,11 +38,10 @@ uint8_t *findchunk(char *ID, uint8_t *start, uint8_t *end) {
   }
   return end;
 }
-void putname(char *dst, char *s) {
+void putname(struct rx5voice *v, char *s) {
   char *p;
-  for (p = dst; p < dst + 6; p++)
+  for (p = v->name; p < endof(v->name); p++)
     *p = *s ? *s++ : ' ';
-  *p = 0;
 }
 #define NOSPACE "not enough space in ROM for sample"
 void putwav(FILE *f, char *filename, int pcmformat) {
@@ -85,7 +85,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   if (wordsize != 16)
     errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
-  putname(voice->name, filename);
+  putname(voice, filename);
   /* Round starting point up from last sample and ensure there is some empty
    * space. If we do not end the new sample starts right after the previous one
    * the previous one gets a click at the end. */
@@ -98,7 +98,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     uint8_t *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
       uint16_t word = getle(p, fmt.blockalign) >> (wordsize - 12);
-      if (q >= rom.data + sizeof(rom.data))
+      if (q >= endof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
       if (((p - data) / fmt.blockalign) & 1) { /* odd sample */
@@ -118,7 +118,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     uint8_t *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
       uint8_t word = getle(p, fmt.blockalign) >> (wordsize - 8);
-      if (q >= rom.data + sizeof(rom.data))
+      if (q >= endof(rom.data))
         errx(-1, NOSPACE);
       *q++ = word;
     }
@@ -175,7 +175,7 @@ int main(void) {
     } else if (s = matchfield(line, fNAME), s) {
       if (!rom.nvoice)
         errx(-1, "name before file statement");
-      putname(v->name, s);
+      putname(v, s);
     } else if (s = matchfield(line, fLOOPSTART), s) {
       v->loopstart = readaddr(s);
     } else if (s = matchfield(line, fLOOPEND), s) {

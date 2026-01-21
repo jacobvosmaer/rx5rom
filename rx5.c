@@ -31,8 +31,7 @@ void loadvoice(struct rx5voice *v, uint8_t *p) {
   v->reverseattackrate = p[22];
   v->level = p[23];
   v->channel = p[24];
-  memmove(v->name, p + 26, 6);
-  v->name[6] = 0;
+  memmove(v->name, p + 26, sizeof(v->name));
 }
 void putvoice(struct rx5voice *v, uint8_t *p) {
   memset(p, 0, 32);
@@ -55,7 +54,7 @@ void putvoice(struct rx5voice *v, uint8_t *p) {
   p[22] = v->reverseattackrate;
   p[23] = v->level;
   p[24] = v->channel;
-  memmove(p + 26, v->name, 6);
+  memmove(p + 26, v->name, sizeof(v->name));
 }
 void printvoice(struct rx5voice *v, FILE *f) {
   fprintf(f, fNAME " %6.6s\n", v->name);

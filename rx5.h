@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 struct rx5voice {
-  char name[7];
+  char name[6];
   uint8_t octave, note, pcmformat, loop;
   int32_t pcmstart, pcmend, loopstart, loopend;
   uint8_t ar, d1r, rr, d2r, d1l, gt;

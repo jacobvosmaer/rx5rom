@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
       for (p = pcmstart; p < pcmend; p++, q++)
         *q = *p << 8;
     }
-    memmove(filename, v->name, 6);
+    memmove(filename, v->name, sizeof(v->name));
     for (p = filename; p < filename + 10; p++)
       if (!*p || strchr(":/", *p))
         *p = '_';
