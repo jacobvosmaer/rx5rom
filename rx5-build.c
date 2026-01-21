@@ -43,6 +43,14 @@ void putname(struct rx5voice *v, char *s) {
   for (p = v->name; p < endof(v->name); p++)
     *p = *s ? *s++ : ' ';
 }
+/* getword sums multi-channel audio to mono */
+uint64_t getword(uint8_t *p, struct wavfmt *fmt) {
+  uint64_t x = 0;
+  int i, framebytes = fmt->blockalign / fmt->channels;
+  for (i = 0; i < fmt->channels; i++)
+    x += getle(p + i * framebytes, framebytes);
+  return x / fmt->channels;
+}
 uint64_t resize(uint64_t word, int from, int to) {
   assert(from > 0 && to > 0);
   return (from > to) ? word >> (from - to) : word << (to - from);
@@ -74,11 +82,11 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     errx(-1, "invalid WAV fmt chunk");
   if (type = wavtype(&fmt), type != 1)
     errx(-1, "unsupported WAV format: %d", type);
-  if (fmt.channels != 1)
+  if (fmt.channels < 1)
     errx(-1, "unsupported number of channels: %d", fmt.channels);
   if (fmt.samplespersec != 25000)
     warnx("warning: samplerate is not 25kHz: %d", fmt.samplespersec);
-  if (!fmt.blockalign)
+  if (fmt.blockalign < 1)
     errx(-1, "invalid fmt.blockalign: %d", fmt.blockalign);
   if (p = findchunk("data", wav + 12, wavend), p == wavend)
     errx(-1, "WAV data section not found");
@@ -98,7 +106,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   if (voice->pcmformat) { /* store 12-bit sample */
     uint8_t *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      uint16_t word = resize(getle(p, fmt.blockalign), wordsize, 12);
+      uint16_t word = resize(getword(p, &fmt), wordsize, 12);
       if (q >= endof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
@@ -118,7 +126,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   } else { /* store 8-bit sample */
     uint8_t *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      uint8_t word = resize(getle(p, fmt.blockalign), wordsize, 8);
+      uint8_t word = resize(getword(p, &fmt), wordsize, 8);
       if (q >= endof(rom.data))
         errx(-1, NOSPACE);
       *q++ = word;

@@ -53,6 +53,8 @@ By default, the voice name is the first 6 characters of the filename. You can ov
 
 The `copy` keyword will copy the last entered voice. This allows you to have multiple voices that play back the same PCM audio data.
 
+The native sample rate is 25kHz. If you use WAV files with a different sample rate they will play back too fast or too slow on the RX5. Stereo WAV files are automatically summed to mono by rx5-build.
+
 Syntax example:
 
 ```
