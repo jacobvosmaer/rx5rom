@@ -2,6 +2,7 @@
 #include "wav.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #define assert(x)                                                              \
   if (!(x))                                                                    \
   __builtin_trap()
@@ -44,12 +45,34 @@ void writewav(uint16_t *pcmdata, int nsamples, int samplerate, FILE *f) {
     fputc(pcmdata[i] >> 8, f);
   }
 }
-struct wavfmt loadfmt(uint8_t *p) {
-  struct wavfmt fmt = {0};
-  fmt.formattag = getle(p + 8, 2);
-  fmt.channels = getle(p + 10, 2);
-  fmt.samplespersec = getle(p + 12, 4);
-  fmt.avgbytespersec = getle(p + 16, 4);
-  fmt.blockalign = getle(p + 20, 2);
-  return fmt;
+int loadfmt(uint8_t *p, struct wavfmt *fmt) {
+  uint32_t size = getle(p + 4, 4);
+  if (size != 16 && size != 18 && size != 40)
+    return -1;
+  memset(fmt, 0, sizeof(*fmt));
+  fmt->formattag = getle(p + 8, 2);
+  fmt->channels = getle(p + 10, 2);
+  fmt->samplespersec = getle(p + 12, 4);
+  fmt->avgbytespersec = getle(p + 16, 4);
+  fmt->blockalign = getle(p + 20, 2);
+  fmt->bitspersample = getle(p + 22, 2);
+  if (size >= 18)
+    fmt->cbsize = getle(p + 24, 2);
+  if (size == 40) {
+    fmt->validbitspersample = getle(p + 26, 2);
+    fmt->channelmask = getle(p + 28, 4);
+    memmove(fmt->subformat, p + 32, sizeof(fmt->subformat));
+  }
+  return 0;
+}
+int wavtype(struct wavfmt *fmt) {
+  uint8_t magic[sizeof(fmt->subformat) - 2] = {0x00, 0x00, 0x00, 0x00, 0x10,
+                                               0x00, 0x80, 0x00, 0x00, 0xAA,
+                                               0x00, 0x38, 0x9B, 0x71};
+  if (fmt->formattag != 0xfffe)
+    return fmt->formattag;
+  else if (!memcmp(fmt->subformat + 2, magic, sizeof(magic)))
+    return getle(fmt->subformat, 2);
+  else
+    return -1;
 }

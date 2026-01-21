@@ -43,6 +43,10 @@ void putname(struct rx5voice *v, char *s) {
   for (p = v->name; p < endof(v->name); p++)
     *p = *s ? *s++ : ' ';
 }
+uint64_t resize(uint64_t word, int from, int to) {
+  assert(from > 0 && to > 0);
+  return (from > to) ? word >> (from - to) : word << (to - from);
+}
 #define NOSPACE "not enough space in ROM for sample"
 void putwav(FILE *f, char *filename, int pcmformat) {
   int64_t wavsize, datasize;
@@ -52,7 +56,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
                                   2,        60, 99,  59, 92, 0, 0, 99, 27, 0};
   struct wavfmt fmt;
   uint64_t x;
-  int wordsize, firstvoice = voice == rom.voice;
+  int type, wordsize, firstvoice = voice == rom.voice;
   if (wavsize = fread(wav, 1, sizeof(wav), f), wavsize == sizeof(wav))
     errx(-1, "WAV file too big");
   if (wavsize < 12)
@@ -66,11 +70,12 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     errx(-1, "missing WAVE header");
   if (p = findchunk("fmt ", wav + 12, wavend), p == wavend)
     errx(-1, "fmt chunk not found");
-  if (x = getle(p + 4, 4), x < 14)
+  if (x = getle(p + 4, 4), x < 16)
     errx(-1, "unsupported WAV fmt size: %llu", x);
-  fmt = loadfmt(p);
-  if (fmt.formattag != 1)
-    errx(-1, "unsupported WAV format: %d", fmt.formattag);
+  if (loadfmt(p, &fmt))
+    errx(-1, "invalid WAV fmt chunk");
+  if (type = wavtype(&fmt), type != 1)
+    errx(-1, "unsupported WAV format: %d", type);
   if (fmt.channels != 1)
     errx(-1, "unsupported number of channels: %d", fmt.channels);
   if (fmt.samplespersec != 25000)
@@ -82,8 +87,6 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   data = p + 8;
   datasize = getle(p + 4, 4);
   wordsize = (8 * fmt.blockalign) / fmt.channels;
-  if (wordsize != 16)
-    errx(-1, "unsupported wordsize: %d", wordsize);
   *voice = defaultvoice;
   putname(voice, filename);
   /* Round starting point up from last sample and ensure there is some empty
@@ -97,7 +100,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   if (voice->pcmformat) { /* store 12-bit sample */
     uint8_t *q = rom.data + voice->pcmstart + 2;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      uint16_t word = getle(p, fmt.blockalign) >> (wordsize - 12);
+      uint16_t word = resize(getle(p, fmt.blockalign), wordsize, 12);
       if (q >= endof(rom.data))
         errx(-1, NOSPACE);
       q[0] = word >> 4;
@@ -117,7 +120,7 @@ void putwav(FILE *f, char *filename, int pcmformat) {
   } else { /* store 8-bit sample */
     uint8_t *q = rom.data + voice->pcmstart;
     for (p = data; p < data + datasize; p += fmt.blockalign) {
-      uint8_t word = getle(p, fmt.blockalign) >> (wordsize - 8);
+      uint8_t word = resize(getle(p, fmt.blockalign), wordsize, 8);
       if (q >= endof(rom.data))
         errx(-1, NOSPACE);
       *q++ = word;
