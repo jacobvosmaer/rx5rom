@@ -46,9 +46,9 @@ void putname(struct rx5voice *v, char *s) {
 /* getword sums multi-channel audio to mono */
 uint64_t getword(uint8_t *p, struct wavfmt *fmt) {
   uint64_t x = 0;
-  int i, framebytes = fmt->blockalign / fmt->channels;
+  int i, samplebytes = fmt->blockalign / fmt->channels;
   for (i = 0; i < fmt->channels; i++)
-    x += getle(p + i * framebytes, framebytes);
+    x += getle(p + i * samplebytes, samplebytes);
   return x / fmt->channels;
 }
 uint64_t resize(uint64_t word, int from, int to) {
