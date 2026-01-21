@@ -70,8 +70,6 @@ void putwav(FILE *f, char *filename, int pcmformat) {
     errx(-1, "missing WAVE header");
   if (p = findchunk("fmt ", wav + 12, wavend), p == wavend)
     errx(-1, "fmt chunk not found");
-  if (x = getle(p + 4, 4), x < 16)
-    errx(-1, "unsupported WAV fmt size: %llu", x);
   if (loadfmt(p, &fmt))
     errx(-1, "invalid WAV fmt chunk");
   if (type = wavtype(&fmt), type != 1)
